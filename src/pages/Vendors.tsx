@@ -141,7 +141,6 @@ const Vendors = () => {
 
                   {/* Table Example Image */}
                   <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-slate-800">Table Example</h4>
                     <div className="bg-gray-100 rounded-lg overflow-hidden">
                       <img 
                         src="/vendor-table-black.png" 
