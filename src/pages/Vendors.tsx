@@ -109,47 +109,49 @@ const Vendors = () => {
                 </div>
               </div>
 
-              {/* Vendor Table Information */}
-              <div className="mb-16">
-                <h3 className="text-2xl font-bold text-slate-900 mb-8">Vendor Table Information</h3>
+              {/* Table Rental Pricing */}
+              <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                  <span className="mr-3">🏪</span>
+                  Table Rental Pricing
+                </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-100">
-                    <h4 className="text-xl font-bold text-slate-900 mb-6">Table Rental</h4>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div>
-                          <p className="font-semibold text-slate-900">Standard Table</p>
-                          <p className="text-slate-600 text-sm">6ft table with 2 chairs</p>
-                        </div>
-                        <span className="text-blue-700 font-bold text-lg">$150</span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Pricing */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                      <div>
+                        <span className="font-semibold text-gray-900">One (1) Vendor Table</span>
                       </div>
-                      
-                      <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <div>
-                          <p className="font-semibold text-slate-900">Premium Table</p>
-                          <p className="text-slate-600 text-sm">8ft table with 3 chairs</p>
-                        </div>
-                        <span className="text-purple-700 font-bold text-lg">$200</span>
+                      <span className="text-slate-600 font-bold text-xl">$250.00</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                      <div>
+                        <span className="font-semibold text-gray-900">Two (2) Vendor Tables</span>
                       </div>
-                      
-                      <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                        <div>
-                          <p className="font-semibold text-slate-900">Corner Booth</p>
-                          <p className="text-slate-600 text-sm">Premium location with extra space</p>
-                        </div>
-                        <span className="text-green-700 font-bold text-lg">$275</span>
+                      <span className="text-slate-600 font-bold text-xl">$350.00</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-200">
+                      <div>
+                        <span className="font-semibold text-gray-900">Three (3) Vendor Tables</span>
                       </div>
+                      <span className="text-slate-600 font-bold text-xl">$450.00</span>
                     </div>
                   </div>
 
-                  {/* Audience Photo */}
-                  <div className="flex items-center justify-center">
-                    <img 
-                      src="/lectureship-audience.png" 
-                      alt="Engaged audience at lectureship"
-                      className="w-full max-w-md h-auto rounded-lg shadow-lg"
-                    />
+                  {/* Table Example Image */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-slate-800">Table Example</h4>
+                    <div className="bg-gray-100 rounded-lg overflow-hidden">
+                      <img 
+                        src="/vendor-table-black.png" 
+                        alt="Example of vendor table setup"
+                        className="w-full h-64 object-contain bg-white"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 text-center">
+                      Example of vendor table
+                    </p>
                   </div>
                 </div>
               </div>
