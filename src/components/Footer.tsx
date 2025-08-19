@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Footer() {
   return (
     <footer className="bg-gradient-to-r from-slate-900 via-gray-900 to-slate-900 text-white">
@@ -25,10 +27,10 @@ function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-slate-200">Quick Links</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Registration</a></li>
-              <li><a href="#" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Hotel Information</a></li>
-              <li><a href="#" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Vendor Tables</a></li>
-              <li><a href="#" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Schedule</a></li>
+              <li><Link to="/register" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Registration</Link></li>
+              <li><Link to="/hotel" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Hotel Information</Link></li>
+              <li><Link to="/vendors" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Vendor Tables</Link></li>
+              <li><Link to="/contact" className="text-slate-100 hover:text-white transition-colors duration-200 hover:underline">Contact</Link></li>
             </ul>
           </div>
 
