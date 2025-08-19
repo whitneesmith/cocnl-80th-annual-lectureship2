@@ -115,6 +115,4 @@ const Header = () => {
   );
 };
 
-export default Header;</parameter>
-<parameter name="taskTitle">Create working mobile header</parameter>
-</invoke>
+export default Header;
