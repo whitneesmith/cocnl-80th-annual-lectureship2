@@ -109,22 +109,6 @@ const RegisterForm = () => {
     }
   };
 
-  // Payment links - DEMO LINKS FOR TESTING (Replace with real Square links later)
-  const getPaymentLinks = () => {
-    const links: { [key: string]: string } = {
-      'individual-early': '#demo-early-bird-payment',
-      'individual-regular': '#demo-regular-payment',
-      'georgia-early': '#demo-georgia-early-payment',
-      'georgia-regular': '#demo-georgia-regular-payment',
-      'group-5-early': '#demo-group5-early-payment',
-      'group-5-regular': '#demo-group5-regular-payment',
-      'group-10-early': '#demo-group10-early-payment',
-      'group-10-regular': '#demo-group10-regular-payment',
-      'memorial-banquet': '#demo-banquet-payment'
-    };
-    return links;
-  };
-
   const getRegistrationPrice = () => {
     const prices: { [key: string]: number } = {
       'individual-early': 190,
@@ -175,6 +159,30 @@ const RegisterForm = () => {
     const banquetPrice = formData.specialEvents.includes('memorial-banquet') ? 75 : 0;
     
     return registrationPrice + vendorPrice + adPrice + banquetPrice;
+  };
+
+  // Payment links - REAL SQUARE LINKS
+  const getPaymentLinks = () => {
+    const links: { [key: string]: string } = {
+      'individual-early': 'https://square.link/u/ieidynuy',
+      'individual-regular': 'https://square.link/u/VdIdderF',
+      'georgia-early': 'https://square.link/u/2xwzKLOF',
+      'georgia-regular': 'https://square.link/u/UACAsYNa',
+      'group-5-early': 'https://square.link/u/R8ten5jo',
+      'group-5-regular': 'https://square.link/u/kBhQ4aaj',
+      'group-10-early': 'https://square.link/u/8TgV0WNa',
+      'group-10-regular': 'https://square.link/u/c9dLJDyX',
+      'memorial-banquet': 'https://square.link/u/3EFbURkB',
+      'vendor-1-table': 'https://square.link/u/MuxoTkEI',
+      'vendor-2-tables': 'https://square.link/u/2RFSfiYv',
+      'vendor-3-tables': 'https://square.link/u/VeLw36WE',
+      'full-page-color': 'https://square.link/u/aDKuberx',
+      'half-page-color': 'https://square.link/u/soBLCNwD',
+      'full-page-bw': 'https://square.link/u/oqgDc3Ki',
+      'half-page-bw': 'https://square.link/u/orWjSbJa',
+      'quarter-page-bw': 'https://square.link/u/B7ON7VnH'
+    };
+    return links;
   };
 
   if (showPayment) {
@@ -282,7 +290,7 @@ const RegisterForm = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <a 
-                      href="#vendor-payment"
+                      href={paymentLinks[`vendor-${formData.vendorTables}-table${formData.vendorTables > 1 ? 's' : ''}`]}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105"
@@ -319,24 +327,48 @@ const RegisterForm = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <a 
-                      href="#advertisement-payment"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105"
-                    >
-                      💳 Pay for Ads
-                    </a>
-                    
-                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
-                      <div className="text-sm">Zelle to:</div>
-                      <div className="text-xs">cocnl1945@gmail.com</div>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
-                      <div className="text-sm">Mail Check</div>
-                      <div className="text-xs">See details below</div>
+                  <div className="space-y-3">
+                    {formData.advertisements.map((ad, index) => (
+                      <div key={index} className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-slate-700 font-medium">
+                          {ad === 'full-page-color' && 'Full Page Color Ad'}
+                          {ad === 'half-page-color' && 'Half Page Color Ad'}
+                          {ad === 'full-page-bw' && 'Full Page B&W Ad'}
+                          {ad === 'half-page-bw' && 'Half Page B&W Ad'}
+                          {ad === 'quarter-page-bw' && 'Quarter Page B&W Ad'}
+                        </span>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-slate-600 font-bold">
+                            ${ad === 'full-page-color' ? '225' : 
+                              ad === 'half-page-color' ? '175' :
+                              ad === 'full-page-bw' ? '180' :
+                              ad === 'half-page-bw' ? '125' :
+                              ad === 'quarter-page-bw' ? '80' : '0'}
+                          </span>
+                          <a 
+                            href={paymentLinks[ad]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors duration-200"
+                          >
+                            💳 Pay
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                        <div className="text-sm">Zelle to:</div>
+                        <div className="text-xs">cocnl1945@gmail.com</div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                        <div className="text-sm">Mail Check</div>
+                        <div className="text-xs">See details below</div>
+                      </div>
                     </div>
                   </div>
                 </div>
