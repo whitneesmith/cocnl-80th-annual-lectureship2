@@ -1,5 +1,5 @@
-                  import React from 'react';
-
+        import React from 'react';
+import { Link } from 'react-router-dom';
 const Register = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-50">
@@ -22,12 +22,12 @@ const Register = () => {
               <p className="text-slate-100 mb-6">
                 Use our convenient online registration form with multiple payment options including Credit Card, PayPal, and Zelle.
               </p>
-              <a 
-                href="/register-form" 
-                className="inline-block bg-white text-slate-700 font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
-              >
-                Start Online Registration
-              </a>
+<Link 
+  to="/register-form" 
+  className="inline-block bg-white text-slate-700 font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
+>
+  Start Online Registration
+</Link>
             </div>
           </div>
 
