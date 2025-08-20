@@ -101,7 +101,7 @@ const RegisterForm = () => {
       } else {
         throw new Error(result.error || 'Failed to submit registration');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration submission error:', error);
       setSubmitError(error.message || 'Failed to submit registration. Please try again.');
     } finally {
@@ -161,7 +161,7 @@ const RegisterForm = () => {
     return registrationPrice + vendorPrice + adPrice + banquetPrice;
   };
 
-  // Payment links - REAL SQUARE LINKS
+  // Payment links - YOUR REAL SQUARE LINKS
   const getPaymentLinks = () => {
     const links: { [key: string]: string } = {
       'individual-early': 'https://square.link/u/ieidynuy',
