@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+// Remove EmailJS import for now - will add back when package is installed
+// import emailjs from '@emailjs/browser';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +22,8 @@ const RegisterForm = () => {
     additionalNotes: '',
     // New vendor and advertisement options
     vendorTables: 0,
-    advertisements: [] as string[]
+    advertisements: [] as string[],
+    dayToDayDates: [] as string[]
   });
 
   const [showPayment, setShowPayment] = useState(false);
@@ -46,6 +49,13 @@ const RegisterForm = () => {
             ? [...prev.advertisements, value]
             : prev.advertisements.filter(ad => ad !== value)
         }));
+      } else if (name === 'dayToDayDates') {
+        setFormData(prev => ({
+          ...prev,
+          dayToDayDates: checked 
+            ? [...prev.dayToDayDates, value]
+            : prev.dayToDayDates.filter(date => date !== value)
+        }));
       }
     } else if (name === 'vendorTables') {
       setFormData(prev => ({
@@ -65,9 +75,28 @@ const RegisterForm = () => {
     setIsSubmitting(true);
     setSubmitError('');
     
+    // Check if user has selected at least one option (registration, vendor tables, ads, or special events)
+    const hasRegistration = formData.registrationType !== '';
+    const hasVendorTables = formData.vendorTables > 0;
+    const hasAdvertisements = formData.advertisements.length > 0;
+    const hasSpecialEvents = formData.specialEvents.length > 0;
+    
+    if (!hasRegistration && !hasVendorTables && !hasAdvertisements && !hasSpecialEvents) {
+      alert('Please select at least one option: registration type, vendor tables, advertisements, or special events.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Validate day-to-day registration has selected days
+    if (formData.registrationType === 'day-to-day' && formData.dayToDayDates.length === 0) {
+      alert('Please select at least one day to attend for day-to-day registration.');
+      setIsSubmitting(false);
+      return;
+    }
+    
     // Validate group registrations or multiple individual registrations have attendee names
     if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
-         (formData.quantity > 1 && !formData.registrationType.includes('group-'))) && 
+         (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
         !formData.attendeeNames.trim()) {
       alert('Please list all attendee names.');
       setIsSubmitting(false);
@@ -76,7 +105,7 @@ const RegisterForm = () => {
     
     // Validate contact info for multiple registrations
     if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
-         (formData.quantity > 1 && !formData.registrationType.includes('group-'))) && 
+         (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
         !formData.attendeeContacts.trim()) {
       alert('Please provide contact information for all attendees.');
       setIsSubmitting(false);
@@ -90,13 +119,40 @@ const RegisterForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          dayToDayDates: formData.dayToDayDates.join(', ') // Convert array to string for storage
+        }),
       });
 
       const result = await response.json();
 
       if (result.success) {
         console.log('Registration submitted successfully:', result.data);
+        
+        // TODO: Add email confirmation when EmailJS is set up
+        // Send confirmation email
+        // try {
+        //   await emailjs.send(
+        //     'YOUR_SERVICE_ID', // Replace with your EmailJS service ID
+        //     'YOUR_TEMPLATE_ID', // Replace with your EmailJS template ID
+        //     {
+        //       to_name: `${formData.firstName} ${formData.lastName}`,
+        //       to_email: formData.email,
+        //       registration_type: formData.registrationType,
+        //       total_amount: getTotalPrice(),
+        //       attendee_names: formData.attendeeNames || 'N/A',
+        //       vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s)` : 'None',
+        //       advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') : 'None'
+        //     },
+        //     'YOUR_PUBLIC_KEY' // Replace with your EmailJS public key
+        //   );
+        //   console.log('Confirmation email sent successfully');
+        // } catch (emailError) {
+        //   console.error('Failed to send confirmation email:', emailError);
+        //   // Don't fail the registration if email fails
+        // }
+        
         setShowPayment(true);
       } else {
         throw new Error(result.error || 'Failed to submit registration');
@@ -118,9 +174,15 @@ const RegisterForm = () => {
       'group-5-early': 925,
       'group-5-regular': 975,
       'group-10-early': 1800,
-      'group-10-regular': 1925
+      'group-10-regular': 1925,
+      'day-to-day': 75
     };
     const basePrice = prices[formData.registrationType] || 0;
+    
+    // For day-to-day registrations, multiply by number of days selected
+    if (formData.registrationType === 'day-to-day') {
+      return basePrice * formData.dayToDayDates.length;
+    }
     
     // For group registrations, price is fixed regardless of quantity
     if (formData.registrationType.includes('group-')) {
@@ -152,16 +214,27 @@ const RegisterForm = () => {
     }, 0);
   };
 
+  const getSpecialEventsPrice = () => {
+    let total = 0;
+    if (formData.specialEvents.includes('memorial-banquet')) {
+      total += 75;
+    }
+    if (formData.specialEvents.includes('womens-luncheon')) {
+      total += 60;
+    }
+    return total;
+  };
+
   const getTotalPrice = () => {
     const registrationPrice = getRegistrationPrice();
     const vendorPrice = getVendorTablePrice();
     const adPrice = getAdvertisementPrice();
-    const banquetPrice = formData.specialEvents.includes('memorial-banquet') ? 75 : 0;
+    const specialEventsPrice = getSpecialEventsPrice();
     
-    return registrationPrice + vendorPrice + adPrice + banquetPrice;
+    return registrationPrice + vendorPrice + adPrice + specialEventsPrice;
   };
 
-  // Payment links - YOUR REAL SQUARE LINKS
+  // Payment links - REAL SQUARE LINKS
   const getPaymentLinks = () => {
     const links: { [key: string]: string } = {
       'individual-early': 'https://square.link/u/ieidynuy',
@@ -180,7 +253,8 @@ const RegisterForm = () => {
       'half-page-color': 'https://square.link/u/soBLCNwD',
       'full-page-bw': 'https://square.link/u/oqgDc3Ki',
       'half-page-bw': 'https://square.link/u/orWjSbJa',
-      'quarter-page-bw': 'https://square.link/u/B7ON7VnH'
+      'quarter-page-bw': 'https://square.link/u/B7ON7VnH',
+      'day-to-day': 'https://square.link/u/day-to-day'
     };
     return links;
   };
@@ -210,11 +284,23 @@ const RegisterForm = () => {
               <div className="space-y-2 text-slate-700">
                 <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
-                <p><strong>Registration Type:</strong> {formData.registrationType}</p>
-                {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
+                <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
+                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
+                    const dayNames: { [key: string]: string } = {
+                      'sunday-march-9': 'Sunday, March 9',
+                      'monday-march-10': 'Monday, March 10', 
+                      'tuesday-march-11': 'Tuesday, March 11',
+                      'wednesday-march-12': 'Wednesday, March 12',
+                      'thursday-march-13': 'Thursday, March 13'
+                    };
+                    return dayNames[date];
+                  }).join(', ')}</p>
+                )}
+                {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
                   <p><strong>Quantity:</strong> {formData.quantity} people</p>
                 )}
-                <p><strong>Attendees:</strong> {formData.attendeeNames}</p>
+                {formData.attendeeNames && <p><strong>Attendees:</strong> {formData.attendeeNames}</p>}
                 {formData.attendeeContacts && (
                   <p><strong>Attendee Contacts:</strong> {formData.attendeeContacts}</p>
                 )}
@@ -237,7 +323,7 @@ const RegisterForm = () => {
                     <div>
                       <h4 className="text-lg font-semibold text-slate-900">Registration Fee</h4>
                       <p className="text-slate-600">{formData.registrationType}</p>
-                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
+                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
                         <p className="text-slate-500 text-sm">{formData.quantity} people × ${getRegistrationPrice() / formData.quantity}</p>
                       )}
                     </div>
@@ -596,14 +682,28 @@ const RegisterForm = () => {
             {/* Registration Type */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Registration Type</h3>
+              
+              {/* Add notice about optional registration */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 mb-2">Registration Options</h4>
+                    <p className="text-blue-700 text-sm">
+                      You can register for the full Lectureship, select day-to-day attendance, or attend special events only. 
+                      Registration type is optional if you're only purchasing vendor tables, advertisements, or special event tickets.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               <select
                 name="registrationType"
-                required
                 value={formData.registrationType}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
               >
-                <option value="">Select registration type</option>
+                <option value="">No Lectureship Registration (Special Events/Vendor/Ads Only)</option>
                 <option value="individual-early">Individual Early Bird - $190 (Until Dec 31, 2025)</option>
                 <option value="individual-regular">Individual Regular - $210 (Starting Jan 1, 2026)</option>
                 <option value="georgia-early">Georgia Resident Early Bird - $175 (Until Dec 31, 2025)</option>
@@ -612,11 +712,137 @@ const RegisterForm = () => {
                 <option value="group-5-regular">Group 5 People Regular - $975 (Starting Jan 1, 2026)</option>
                 <option value="group-10-early">Group 10 People Early Bird - $1,800 (Until Dec 31, 2025)</option>
                 <option value="group-10-regular">Group 10 People Regular - $1,925 (Starting Jan 1, 2026)</option>
+                <option value="day-to-day">Day-to-Day Registration - $75 per day</option>
               </select>
             </div>
 
-            {/* Quantity Selector - Only show for individual registrations */}
-            {formData.registrationType && !formData.registrationType.includes('group-') && (
+            {/* Day-to-Day Date Selection - Show only for day-to-day registration */}
+            {formData.registrationType === 'day-to-day' && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">Select Days to Attend</h3>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <span className="text-yellow-600 text-2xl mr-3 mt-1">📅</span>
+                    <div>
+                      <h4 className="font-semibold text-yellow-800 mb-2">Day-to-Day Registration</h4>
+                      <p className="text-yellow-700 text-sm mb-2">
+                        <strong>$75 per day</strong> - Select which specific days you plan to attend.
+                      </p>
+                      <p className="text-yellow-700 text-sm">
+                        <strong>Note:</strong> No amenities (meals, materials) are provided with day-to-day registration.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="sunday-march-9"
+                      checked={formData.dayToDayDates.includes('sunday-march-9')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Sunday, March 9</span>
+                      <p className="text-slate-600 text-sm">Opening Day</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="monday-march-10"
+                      checked={formData.dayToDayDates.includes('monday-march-10')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Monday, March 10</span>
+                      <p className="text-slate-600 text-sm">Day 2</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="tuesday-march-11"
+                      checked={formData.dayToDayDates.includes('tuesday-march-11')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Tuesday, March 11</span>
+                      <p className="text-slate-600 text-sm">Day 3</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="wednesday-march-12"
+                      checked={formData.dayToDayDates.includes('wednesday-march-12')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Wednesday, March 12</span>
+                      <p className="text-slate-600 text-sm">Day 4 - Memorial Banquet</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="thursday-march-13"
+                      checked={formData.dayToDayDates.includes('thursday-march-13')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Thursday, March 13</span>
+                      <p className="text-slate-600 text-sm">Final Day</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+                </div>
+
+                {formData.dayToDayDates.length > 0 && (
+                  <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-700">
+                        Selected: {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''}
+                      </span>
+                      <span className="text-slate-900 font-bold text-lg">
+                        Total: ${formData.dayToDayDates.length * 75}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {formData.dayToDayDates.length === 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700 text-sm">
+                      ⚠️ Please select at least one day to attend for day-to-day registration.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quantity Selector - Only show for individual registrations (not day-to-day) */}
+            {formData.registrationType && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day' && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">Number of People</h3>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -660,7 +886,7 @@ const RegisterForm = () => {
 
             {/* Attendee Names - Show for group registrations OR multiple individual registrations */}
             {((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
-              (formData.quantity > 1 && !formData.registrationType.includes('group-'))) && (
+              (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">
                   {formData.registrationType.includes('group-') ? 'Group Attendee Names' : 'All Attendee Names'}
@@ -736,40 +962,60 @@ const RegisterForm = () => {
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Special Events</h3>
               
-              {/* Important Notice about Banquet */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              {/* Updated notice about Banquet */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start">
-                  <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
+                  <span className="text-green-600 text-2xl mr-3 mt-1">🎉</span>
                   <div>
-                    <h4 className="font-semibold text-blue-800 mb-2">Memorial Banquet Information</h4>
-                    <p className="text-blue-700 text-sm mb-2">
-                      <strong>✅ Banquet ticket IS INCLUDED</strong> in your Lectureship registration above.
+                    <h4 className="font-semibold text-green-800 mb-2">Memorial Banquet Information</h4>
+                    <p className="text-green-700 text-sm mb-2">
+                      <strong>If you registered for the full Lectureship above:</strong> Your banquet ticket is already included!
                     </p>
-                    <p className="text-blue-700 text-sm">
-                      <strong>The $75 option below is ONLY for:</strong> People who want to attend the banquet 
-                      but are NOT registering for the full Lectureship (banquet-only ticket).
+                    <p className="text-green-700 text-sm">
+                      <strong>The $75 option below is for:</strong> People who want to attend ONLY the banquet 
+                      (not registering for the full Lectureship) or want to bring additional guests.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <label className="flex items-start">
-                <input
-                  type="checkbox"
-                  name="specialEvents"
-                  value="memorial-banquet"
-                  checked={formData.specialEvents.includes('memorial-banquet')}
-                  onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
-                />
-                <div className="ml-3">
-                  <span className="text-slate-700 font-medium">John O. Williams Memorial Banquet</span>
-                  <p className="text-slate-600 text-sm font-medium">Additional Banquet-Only Tickets • March 12, 2026 • 6:00 PM • $75 each</p>
-                  <p className="text-slate-500 text-xs mt-1">
-                    For guests who want to attend ONLY the banquet (not the full Lectureship)
-                  </p>
-                </div>
-              </label>
+              <div className="space-y-4">
+                <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="specialEvents"
+                    value="memorial-banquet"
+                    checked={formData.specialEvents.includes('memorial-banquet')}
+                    onChange={handleInputChange}
+                    className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                  />
+                  <div className="ml-3">
+                    <span className="text-slate-700 font-medium">John O. Williams Memorial Banquet</span>
+                    <p className="text-slate-600 text-sm font-medium">March 12, 2026 • 6:00 PM • $75 per ticket</p>
+                    <p className="text-slate-500 text-xs mt-1">
+                      For banquet-only guests or additional tickets for family/friends
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="specialEvents"
+                    value="womens-luncheon"
+                    checked={formData.specialEvents.includes('womens-luncheon')}
+                    onChange={handleInputChange}
+                    className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                  />
+                  <div className="ml-3">
+                    <span className="text-slate-700 font-medium">Women's Division Luncheon</span>
+                    <p className="text-slate-600 text-sm font-medium">March 11, 2026 • 12:00 PM • $60 per ticket</p>
+                    <p className="text-slate-500 text-xs mt-1">
+                      On-site purchase only - check here if interested
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Vendor Tables Section */}
@@ -971,7 +1217,14 @@ const RegisterForm = () => {
                   <div className="space-y-2 text-slate-700">
                     {formData.registrationType && (
                       <div className="flex justify-between">
-                        <span>Registration ({formData.registrationType})</span>
+                        <span>
+                          Registration ({formData.registrationType})
+                          {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                            <span className="text-sm text-slate-500 block">
+                              {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''} × $75
+                            </span>
+                          )}
+                        </span>
                         <span className="font-bold">${getRegistrationPrice()}</span>
                       </div>
                     )}
@@ -989,16 +1242,24 @@ const RegisterForm = () => {
                     )}
                     {formData.specialEvents.includes('memorial-banquet') && (
                       <div className="flex justify-between">
-                        <span>Memorial Banquet (Additional Tickets)</span>
+                        <span>Memorial Banquet Tickets</span>
                         <span className="font-bold">$75</span>
                       </div>
                     )}
-                    <div className="border-t border-slate-300 pt-2 mt-4">
-                      <div className="flex justify-between text-lg font-bold text-slate-900">
-                        <span>Total</span>
-                        <span>${getTotalPrice()}</span>
+                    {formData.specialEvents.includes('womens-luncheon') && (
+                      <div className="flex justify-between">
+                        <span>Women's Luncheon (On-site purchase)</span>
+                        <span className="font-bold">$60</span>
                       </div>
-                    </div>
+                    )}
+                    {getTotalPrice() > 0 && (
+                      <div className="border-t border-slate-300 pt-2 mt-4">
+                        <div className="flex justify-between text-lg font-bold text-slate-900">
+                          <span>Total</span>
+                          <span>${getTotalPrice()}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
