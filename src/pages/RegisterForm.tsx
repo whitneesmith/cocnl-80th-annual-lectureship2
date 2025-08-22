@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-// Remove EmailJS import for now - will add back when package is installed
-// import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/browser';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -130,28 +129,35 @@ const RegisterForm = () => {
       if (result.success) {
         console.log('Registration submitted successfully:', result.data);
         
-        // TODO: Add email confirmation when EmailJS is set up
         // Send confirmation email
-        // try {
-        //   await emailjs.send(
-        //     'YOUR_SERVICE_ID', // Replace with your EmailJS service ID
-        //     'YOUR_TEMPLATE_ID', // Replace with your EmailJS template ID
-        //     {
-        //       to_name: `${formData.firstName} ${formData.lastName}`,
-        //       to_email: formData.email,
-        //       registration_type: formData.registrationType,
-        //       total_amount: getTotalPrice(),
-        //       attendee_names: formData.attendeeNames || 'N/A',
-        //       vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s)` : 'None',
-        //       advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') : 'None'
-        //     },
-        //     'YOUR_PUBLIC_KEY' // Replace with your EmailJS public key
-        //   );
-        //   console.log('Confirmation email sent successfully');
-        // } catch (emailError) {
-        //   console.error('Failed to send confirmation email:', emailError);
-        //   // Don't fail the registration if email fails
-        // }
+        try {
+          await emailjs.send(
+            'service_xk43dz8', // Your EmailJS service ID
+            'template_oywsajv', // Your EmailJS template ID
+            {
+              to_name: `${formData.firstName} ${formData.lastName}`,
+              to_email: formData.email,
+              from_name: 'Churches of Christ National Lectureship',
+              registration_type: formData.registrationType || 'Special Events Only',
+              total_amount: getTotalPrice(),
+              attendee_names: formData.attendeeNames || 'N/A',
+              attendee_contacts: formData.attendeeContacts || 'N/A',
+              vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
+              advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+              special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
+              day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
+              phone: formData.phone,
+              address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+              additional_notes: formData.additionalNotes || 'None',
+              quantity: formData.quantity
+            },
+            'Nttdl3naYDqz18xNa' // Your EmailJS public key
+          );
+          console.log('Confirmation email sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Don't fail the registration if email fails
+        }
         
         setShowPayment(true);
       } else {
@@ -1315,4 +1321,4 @@ const RegisterForm = () => {
   );
 };
 
-export default RegisterForm;
+export default RegisterForm
