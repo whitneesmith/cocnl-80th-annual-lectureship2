@@ -1,4 +1,4 @@
-  function Hotel() {
+function Hotel() {
   return (
     <div className="bg-white">
       {/* Header Section */}
@@ -84,37 +84,6 @@
                   No refunds will be granted
                 </li>
               </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Check-in/Check-out Information */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Check-In & Check-Out Policy</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="text-green-600 mb-4">
-                <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Check-In</h3>
-              <p className="text-2xl font-bold text-green-600 mb-2">Friday, March 6, 2026</p>
-              <p className="text-lg text-gray-600">4:00 P.M.</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="text-red-600 mb-4">
-                <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Check-Out</h3>
-              <p className="text-2xl font-bold text-red-600 mb-2">Friday, March 13, 2026</p>
-              <p className="text-lg text-gray-600">11:00 A.M.</p>
             </div>
           </div>
         </div>
