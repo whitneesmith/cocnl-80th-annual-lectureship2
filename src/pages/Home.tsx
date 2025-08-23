@@ -1,4 +1,4 @@
-                            import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 function Home() {
   return (
@@ -58,9 +58,9 @@ function Home() {
           <p className="text-center text-gray-600 mb-12">Join us for five days of fellowship, worship, and spiritual growth</p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-  <div className="bg-white/80 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg border border-slate-200">
-    <p className="text-slate-800 font-semibold text-lg">📅 March 8-12, 2026</p>
-  </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg border border-slate-200">
+              <p className="text-slate-800 font-semibold text-lg">📅 March 8-12, 2026</p>
+            </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-lg px-6 py-4 shadow-lg border border-slate-200">
               <p className="text-slate-800 font-semibold text-lg">📍 Atlanta, Georgia</p>
             </div>
@@ -71,12 +71,12 @@ function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             <div className="bg-slate-50 rounded-lg p-6 text-center shadow-md hover:shadow-lg transition-shadow duration-200">
-  <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
-    <span className="text-white text-2xl">📅</span>
-  </div>
-  <h3 className="text-lg font-semibold text-gray-900 mb-2">5 Days</h3>
-  <p className="text-gray-600">March 8-12, 2026</p>
-</div>
+              <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl">📅</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">5 Days</h3>
+              <p className="text-gray-600">March 8-12, 2026</p>
+            </div>
 
             <div className="bg-slate-50 rounded-lg p-6 text-center shadow-md hover:shadow-lg transition-shadow duration-200">
               <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -374,7 +374,7 @@ function Home() {
                 <span className="text-white text-2xl">✉️</span>
               </div>
               <h3 className="font-semibold text-slate-200 mb-2">Email</h3>
-              <p className="text-white text-xl">cocnl@gmail.com</p>
+              <p className="text-white text-xl">cocnl1945@gmail.com</p>
             </div>
           </div>
 
