@@ -1,8 +1,92 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 
 function Home() {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [showControls, setShowControls] = useState(false);
+  const playerRef = useRef<any>(null);
+
+  useEffect(() => {
+    // Load YouTube IFrame API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    // Create YouTube player when API is ready
+    (window as any).onYouTubeIframeAPIReady = () => {
+      playerRef.current = new (window as any).YT.Player('youtube-audio-player', {
+        height: '0',
+        width: '0',
+        videoId: 'cna5fVCli1A', // Extracted from your YouTube URL
+        playerVars: {
+          autoplay: 1,
+          loop: 1,
+          playlist: 'cna5fVCli1A', // For looping
+          controls: 0,
+          showinfo: 0,
+          rel: 0,
+          iv_load_policy: 3,
+          modestbranding: 1,
+          start: 0
+        },
+        events: {
+          onReady: (event: any) => {
+            event.target.setVolume(30); // Set to 30% volume
+            setShowControls(true);
+          },
+          onStateChange: (event: any) => {
+            if (event.data === (window as any).YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+            } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+            }
+          }
+        }
+      });
+    };
+
+    return () => {
+      // Cleanup
+      if (playerRef.current && playerRef.current.destroy) {
+        playerRef.current.destroy();
+      }
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    if (playerRef.current) {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    }
+  };
+
   return (
     <div className="bg-white">
+      {/* Hidden YouTube Player for Audio */}
+      <div id="youtube-audio-player" style={{ display: 'none' }}></div>
+      
+      {/* Music Control Button */}
+      {showControls && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            onClick={toggleMusic}
+            className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 flex items-center space-x-2"
+            title={isPlaying ? "Pause Music" : "Play Music"}
+          >
+            <span className="text-xl">
+              {isPlaying ? "🔊" : "🔇"}
+            </span>
+            <span className="text-sm font-medium hidden sm:block">
+              {isPlaying ? "Pause" : "Play"}
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
