@@ -215,9 +215,6 @@ const RegisterForm = () => {
     if (formData.specialEvents.includes('memorial-banquet')) {
       total += 75;
     }
-    if (formData.specialEvents.includes('womens-luncheon')) {
-      total += 60;
-    }
     return total;
   };
 
@@ -278,11 +275,23 @@ const RegisterForm = () => {
               <div className="space-y-2 text-slate-700">
                 <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
-                <p><strong>Registration Type:</strong> {formData.registrationType}</p>
-                {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
+                <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
+                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
+                    const dayNames: { [key: string]: string } = {
+                      'sunday-march-9': 'Sunday, March 9',
+                      'monday-march-10': 'Monday, March 10', 
+                      'tuesday-march-11': 'Tuesday, March 11',
+                      'wednesday-march-12': 'Wednesday, March 12',
+                      'thursday-march-13': 'Thursday, March 13'
+                    };
+                    return dayNames[date];
+                  }).join(', ')}</p>
+                )}
+                {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
                   <p><strong>Quantity:</strong> {formData.quantity} people</p>
                 )}
-                <p><strong>Attendees:</strong> {formData.attendeeNames}</p>
+                {formData.attendeeNames && <p><strong>Attendees:</strong> {formData.attendeeNames}</p>}
                 {formData.attendeeContacts && (
                   <p><strong>Attendee Contacts:</strong> {formData.attendeeContacts}</p>
                 )}
@@ -303,7 +312,7 @@ const RegisterForm = () => {
                     <div>
                       <h4 className="text-lg font-semibold text-slate-900">Registration Fee</h4>
                       <p className="text-slate-600">{formData.registrationType}</p>
-                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
+                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
                         <p className="text-slate-500 text-sm">{formData.quantity} people × ${getRegistrationPrice() / formData.quantity}</p>
                       )}
                     </div>
@@ -957,24 +966,6 @@ const RegisterForm = () => {
                     </p>
                   </div>
                 </label>
-
-                <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="specialEvents"
-                    value="womens-luncheon"
-                    checked={formData.specialEvents.includes('womens-luncheon')}
-                    onChange={handleInputChange}
-                    className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
-                  />
-                  <div className="ml-3">
-                    <span className="text-slate-700 font-medium">Women's Division Luncheon</span>
-                    <p className="text-slate-600 text-sm font-medium">March 11, 2026 • 12:00 PM • $60 per ticket</p>
-                    <p className="text-slate-500 text-xs mt-1">
-                      On-site purchase only - check here if interested
-                    </p>
-                  </div>
-                </label>
               </div>
             </div>
 
@@ -1199,12 +1190,6 @@ const RegisterForm = () => {
                       <div className="flex justify-between">
                         <span>Memorial Banquet Tickets</span>
                         <span className="font-bold">$75</span>
-                      </div>
-                    )}
-                    {formData.specialEvents.includes('womens-luncheon') && (
-                      <div className="flex justify-between">
-                        <span>Women's Luncheon (On-site purchase)</span>
-                        <span className="font-bold">$60</span>
                       </div>
                     )}
                     {getTotalPrice() > 0 && (
