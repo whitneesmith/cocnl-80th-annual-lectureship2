@@ -132,7 +132,7 @@ const RegisterForm = () => {
         // Send confirmation email
         try {
           await emailjs.send(
-            'service_xk43dz8', // Your EmailJS service ID
+            'service_p49aqfy', // Updated service ID
             'template_oywsajv', // Your EmailJS template ID
             {
               to_name: `${formData.firstName} ${formData.lastName}`,
@@ -1321,4 +1321,4 @@ const RegisterForm = () => {
   );
 };
 
-export default RegisterForm
+export default RegisterForm;
