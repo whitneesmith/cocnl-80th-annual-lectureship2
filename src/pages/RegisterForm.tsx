@@ -19,7 +19,6 @@ const RegisterForm = () => {
     specialEvents: [] as string[],
     paymentMethod: '',
     additionalNotes: '',
-    // New vendor and advertisement options
     vendorTables: 0,
     advertisements: [] as string[],
     dayToDayDates: [] as string[]
@@ -74,7 +73,6 @@ const RegisterForm = () => {
     setIsSubmitting(true);
     setSubmitError('');
     
-    // Check if user has selected at least one option (registration, vendor tables, ads, or special events)
     const hasRegistration = formData.registrationType !== '';
     const hasVendorTables = formData.vendorTables > 0;
     const hasAdvertisements = formData.advertisements.length > 0;
@@ -86,14 +84,12 @@ const RegisterForm = () => {
       return;
     }
     
-    // Validate day-to-day registration has selected days
     if (formData.registrationType === 'day-to-day' && formData.dayToDayDates.length === 0) {
       alert('Please select at least one day to attend for day-to-day registration.');
       setIsSubmitting(false);
       return;
     }
     
-    // Validate group registrations or multiple individual registrations have attendee names
     if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
          (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
         !formData.attendeeNames.trim()) {
@@ -102,7 +98,6 @@ const RegisterForm = () => {
       return;
     }
     
-    // Validate contact info for multiple registrations
     if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
          (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
         !formData.attendeeContacts.trim()) {
@@ -112,7 +107,6 @@ const RegisterForm = () => {
     }
 
     try {
-      // Submit registration to Google Sheets
       const response = await fetch('/api/submit-registration', {
         method: 'POST',
         headers: {
@@ -120,7 +114,7 @@ const RegisterForm = () => {
         },
         body: JSON.stringify({
           ...formData,
-          dayToDayDates: formData.dayToDayDates.join(', ') // Convert array to string for storage
+          dayToDayDates: formData.dayToDayDates.join(', ')
         }),
       });
 
@@ -133,7 +127,7 @@ const RegisterForm = () => {
         try {
           await emailjs.send(
             'service_p49aqfy', // Updated service ID
-            'template_oywsajv', // Your EmailJS template ID
+            'template_oywsajv', // Updated template ID
             {
               to_name: `${formData.firstName} ${formData.lastName}`,
               to_email: formData.email,
@@ -156,7 +150,6 @@ const RegisterForm = () => {
           console.log('Confirmation email sent successfully');
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError);
-          // Don't fail the registration if email fails
         }
         
         setShowPayment(true);
@@ -185,17 +178,14 @@ const RegisterForm = () => {
     };
     const basePrice = prices[formData.registrationType] || 0;
     
-    // For day-to-day registrations, multiply by number of days selected
     if (formData.registrationType === 'day-to-day') {
       return basePrice * formData.dayToDayDates.length;
     }
     
-    // For group registrations, price is fixed regardless of quantity
     if (formData.registrationType.includes('group-')) {
       return basePrice;
     }
     
-    // For individual registrations, multiply by quantity
     return basePrice * formData.quantity;
   };
 
@@ -240,7 +230,6 @@ const RegisterForm = () => {
     return registrationPrice + vendorPrice + adPrice + specialEventsPrice;
   };
 
-  // Payment links - REAL SQUARE LINKS
   const getPaymentLinks = () => {
     const links: { [key: string]: string } = {
       'individual-early': 'https://square.link/u/ieidynuy',
@@ -284,29 +273,16 @@ const RegisterForm = () => {
               </p>
             </div>
 
-            {/* Registration Summary */}
             <div className="bg-slate-50 rounded-lg p-6 mb-8">
               <h3 className="text-xl font-bold text-slate-900 mb-4">Registration Summary</h3>
               <div className="space-y-2 text-slate-700">
                 <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
-                <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
-                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
-                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
-                    const dayNames: { [key: string]: string } = {
-                      'sunday-march-9': 'Sunday, March 9',
-                      'monday-march-10': 'Monday, March 10', 
-                      'tuesday-march-11': 'Tuesday, March 11',
-                      'wednesday-march-12': 'Wednesday, March 12',
-                      'thursday-march-13': 'Thursday, March 13'
-                    };
-                    return dayNames[date];
-                  }).join(', ')}</p>
-                )}
-                {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
+                <p><strong>Registration Type:</strong> {formData.registrationType}</p>
+                {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
                   <p><strong>Quantity:</strong> {formData.quantity} people</p>
                 )}
-                {formData.attendeeNames && <p><strong>Attendees:</strong> {formData.attendeeNames}</p>}
+                <p><strong>Attendees:</strong> {formData.attendeeNames}</p>
                 {formData.attendeeContacts && (
                   <p><strong>Attendee Contacts:</strong> {formData.attendeeContacts}</p>
                 )}
@@ -320,16 +296,14 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Payment Options */}
             <div className="space-y-6">
-              {/* Main Registration Payment */}
               {formData.registrationType && (
                 <div className="border border-slate-200 rounded-lg p-6">
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h4 className="text-lg font-semibold text-slate-900">Registration Fee</h4>
                       <p className="text-slate-600">{formData.registrationType}</p>
-                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
+                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && (
                         <p className="text-slate-500 text-sm">{formData.quantity} people × ${getRegistrationPrice() / formData.quantity}</p>
                       )}
                     </div>
@@ -339,7 +313,6 @@ const RegisterForm = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Square Payment */}
                     <a 
                       href={paymentLinks[formData.registrationType]}
                       target="_blank"
@@ -349,13 +322,11 @@ const RegisterForm = () => {
                       💳 Pay with Card
                     </a>
                     
-                    {/* Zelle Payment */}
                     <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
                       <div className="text-sm">Zelle to:</div>
                       <div className="text-xs">cocnl1945@gmail.com</div>
                     </div>
                     
-                    {/* Mail Payment */}
                     <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
                       <div className="text-sm">Mail Check</div>
                       <div className="text-xs">See details below</div>
@@ -364,7 +335,6 @@ const RegisterForm = () => {
                 </div>
               )}
 
-              {/* Vendor Tables Payment */}
               {formData.vendorTables > 0 && (
                 <div className="border border-orange-200 bg-orange-50 rounded-lg p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -403,7 +373,6 @@ const RegisterForm = () => {
                 </div>
               )}
 
-              {/* Advertisements Payment */}
               {formData.advertisements.length > 0 && (
                 <div className="border border-blue-200 bg-blue-50 rounded-lg p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -466,7 +435,6 @@ const RegisterForm = () => {
                 </div>
               )}
 
-              {/* Memorial Banquet Payment */}
               {banquetSelected && (
                 <div className="border border-orange-200 bg-orange-50 rounded-lg p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -494,7 +462,6 @@ const RegisterForm = () => {
                 </div>
               )}
 
-              {/* Total Summary */}
               {getTotalPrice() > 0 && (
                 <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6">
                   <div className="flex justify-between items-center">
@@ -505,7 +472,6 @@ const RegisterForm = () => {
               )}
             </div>
 
-            {/* Payment Instructions */}
             <div className="mt-8 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6">
               <h3 className="text-xl font-bold mb-4">Payment Instructions</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -531,7 +497,6 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="mt-8 text-center space-x-4">
               <button 
                 onClick={() => setShowPayment(false)}
@@ -554,7 +519,6 @@ const RegisterForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Hero Section */}
       <section className="py-12 bg-gradient-to-r from-slate-800 to-slate-900 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Registration Form</h1>
@@ -565,12 +529,10 @@ const RegisterForm = () => {
         </div>
       </section>
 
-      {/* Registration Form */}
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
             
-            {/* Personal Information */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Contact Information</h3>
               
@@ -685,11 +647,9 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Registration Type */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Registration Type</h3>
               
-              {/* Add notice about optional registration */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-start">
                   <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
@@ -722,7 +682,6 @@ const RegisterForm = () => {
               </select>
             </div>
 
-            {/* Day-to-Day Date Selection - Show only for day-to-day registration */}
             {formData.registrationType === 'day-to-day' && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">Select Days to Attend</h3>
@@ -847,7 +806,6 @@ const RegisterForm = () => {
               </div>
             )}
 
-            {/* Quantity Selector - Only show for individual registrations (not day-to-day) */}
             {formData.registrationType && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day' && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">Number of People</h3>
@@ -890,7 +848,6 @@ const RegisterForm = () => {
               </div>
             )}
 
-            {/* Attendee Names - Show for group registrations OR multiple individual registrations */}
             {((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
               (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && (
               <div className="mb-8">
@@ -936,7 +893,6 @@ const RegisterForm = () => {
                   }
                 </p>
 
-                {/* Attendee Contact Information */}
                 <div className="mt-6">
                   <label className="block text-slate-700 text-sm font-bold mb-2">
                     Attendee Contact Information
@@ -964,11 +920,9 @@ const RegisterForm = () => {
               </div>
             )}
 
-            {/* Special Events */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Special Events</h3>
               
-              {/* Updated notice about Banquet */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start">
                   <span className="text-green-600 text-2xl mr-3 mt-1">🎉</span>
@@ -1024,7 +978,6 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Vendor Tables Section */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">🏪 Vendor Tables</h3>
               
@@ -1106,7 +1059,6 @@ const RegisterForm = () => {
               </label>
             </div>
 
-            {/* Souvenir Book Advertisements */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">📧 Souvenir Book Advertisements</h3>
               
@@ -1126,7 +1078,6 @@ const RegisterForm = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Color Ads */}
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-blue-900 mb-4">Color Advertisements</h4>
                   <div className="space-y-3">
@@ -1162,7 +1113,6 @@ const RegisterForm = () => {
                   </div>
                 </div>
 
-                {/* Black & White Ads */}
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Black & White Advertisements</h4>
                   <div className="space-y-3">
@@ -1215,7 +1165,6 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Price Summary */}
             {(formData.registrationType || formData.vendorTables > 0 || formData.advertisements.length > 0 || formData.specialEvents.length > 0) && (
               <div className="mb-8">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
@@ -1271,7 +1220,6 @@ const RegisterForm = () => {
               </div>
             )}
 
-            {/* Additional Notes */}
             <div className="mb-8">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Additional Notes
@@ -1286,7 +1234,6 @@ const RegisterForm = () => {
               />
             </div>
 
-            {/* Submit Button */}
             <div className="text-center">
               {submitError && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
