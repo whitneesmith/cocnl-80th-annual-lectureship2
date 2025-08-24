@@ -1,4 +1,4 @@
-            import React, { useState, useEffect } from 'react';
+              import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import { sendRegistrationEmail } from '../utils/backupEmail';
@@ -187,11 +187,14 @@ const RegisterForm = () => {
         const emailData = {
           to_name: `${formData.firstName} ${formData.lastName}`,
           to_email: formData.email,
+          user_email: formData.email, // Add this as backup
+          email: formData.email, // Add this as backup
           registration_type: formData.registrationType || 'Special Events Only',
           total_amount: getTotalPrice()
         };
         
         console.log('Email data being sent:', emailData);
+        console.log('User email:', formData.email);
         
         const emailResult = await emailjs.send(
           'service_p49aqfy',
@@ -205,6 +208,8 @@ const RegisterForm = () => {
         const adminEmailData = {
           to_name: 'Admin',
           to_email: 'cocnl1945@gmail.com',
+          user_email: 'cocnl1945@gmail.com', // Add backup
+          email: 'cocnl1945@gmail.com', // Add backup
           registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName} - ${formData.registrationType || 'Special Events Only'}`,
           total_amount: getTotalPrice()
         };
