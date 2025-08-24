@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+            import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import { sendRegistrationEmail } from '../utils/backupEmail';
@@ -182,65 +182,46 @@ const RegisterForm = () => {
       // Send confirmation email immediately when registration is submitted
       try {
         console.log('Attempting to send confirmation email...');
-        await emailjs.send(
-          'service_p49aqfy',
-          'template_oywsajv',
-          {
-            to_name: `${formData.firstName} ${formData.lastName}`,
-            to_email: formData.email,
-            from_name: 'Churches of Christ National Lectureship',
-            registration_type: formData.registrationType || 'Special Events Only',
-            total_amount: getTotalPrice(),
-            payment_method: formData.paymentMethod ? 
-              (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
-               formData.paymentMethod === 'zelle' ? 'Zelle' :
-               formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
-            attendee_names: formData.attendeeNames || 'N/A',
-            attendee_contacts: formData.attendeeContacts || 'N/A',
-            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
-            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
-            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
-            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
-            phone: formData.phone,
-            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
-            additional_notes: formData.additionalNotes || 'None',
-            quantity: formData.quantity,
-            registration_id: registrationData.id
-          }
-        );
-        console.log('Confirmation email sent successfully');
         
-        // Also send notification to admin
+        // Simplified email data to match template exactly
+        const emailData = {
+          to_name: `${formData.firstName} ${formData.lastName}`,
+          to_email: formData.email,
+          registration_type: formData.registrationType || 'Special Events Only',
+          total_amount: getTotalPrice()
+        };
+        
+        console.log('Email data being sent:', emailData);
+        
+        const emailResult = await emailjs.send(
+          'service_p49aqfy',
+          'template_oywsajv',
+          emailData,
+          'Nttdl3naYDqz18xNa'
+        );
+        console.log('Confirmation email sent successfully:', emailResult);
+        
+        // Send simpler admin notification
+        const adminEmailData = {
+          to_name: 'Admin',
+          to_email: 'cocnl1945@gmail.com',
+          registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName} - ${formData.registrationType || 'Special Events Only'}`,
+          total_amount: getTotalPrice()
+        };
+        
         await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
-          {
-            to_name: 'Churches of Christ National Lectureship',
-            to_email: 'cocnl1945@gmail.com',
-            from_name: 'Website Registration System',
-            registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName}`,
-            total_amount: getTotalPrice(),
-            payment_method: formData.paymentMethod ? 
-              (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
-               formData.paymentMethod === 'zelle' ? 'Zelle' :
-               formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
-            attendee_names: formData.attendeeNames || 'N/A',
-            attendee_contacts: formData.attendeeContacts || 'N/A',
-            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
-            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
-            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
-            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
-            phone: formData.phone,
-            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
-            additional_notes: formData.additionalNotes || 'None',
-            quantity: formData.quantity,
-            registration_id: registrationData.id
-          }
+          adminEmailData,
+          'Nttdl3naYDqz18xNa'
         );
         console.log('Admin notification sent successfully');
         
       } catch (emailError) {
-        console.error('EmailJS failed, trying backup email system:', emailError);
+        console.error('EmailJS failed with detailed error:', emailError);
+        console.error('Error message:', emailError?.message);
+        console.error('Error status:', emailError?.status);
+        console.error('Error text:', emailError?.text);
         
         // Try backup email system
         try {
@@ -485,6 +466,18 @@ Registration ID: ${registrationData.id}`);
                     formData.paymentMethod === 'check' ? '✉️ Mail Check' : formData.paymentMethod
                   }</p>
                 )}
+                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
+                    const dayNames: { [key: string]: string } = {
+                      'saturday-march-8': 'Saturday, March 8',
+                      'sunday-march-9': 'Sunday, March 9',
+                      'monday-march-10': 'Monday, March 10', 
+                      'tuesday-march-11': 'Tuesday, March 11',
+                      'wednesday-march-12': 'Wednesday, March 12'
+                    };
+                    return dayNames[date];
+                  }).join(', ')}</p>
+                )}
               </div>
             </div>
 
@@ -605,7 +598,7 @@ Registration ID: ${registrationData.id}`);
           <p className="text-xl text-slate-100">
             Churches of Christ 80th Annual "Historical" National Lectureship
           </p>
-          <p className="text-slate-200 mt-2">March 9-13, 2026 • Atlanta, Georgia</p>
+          <p className="text-slate-200 mt-2">March 8-12, 2026 • Atlanta, Georgia</p>
         </div>
       </section>
 
@@ -787,6 +780,22 @@ Registration ID: ${registrationData.id}`);
                     <input
                       type="checkbox"
                       name="dayToDayDates"
+                      value="saturday-march-8"
+                      checked={formData.dayToDayDates.includes('saturday-march-8')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Saturday, March 8</span>
+                      <p className="text-slate-600 text-sm">Opening Day</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
                       value="sunday-march-9"
                       checked={formData.dayToDayDates.includes('sunday-march-9')}
                       onChange={handleInputChange}
@@ -794,7 +803,7 @@ Registration ID: ${registrationData.id}`);
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">Sunday, March 9</span>
-                      <p className="text-slate-600 text-sm">Opening Day</p>
+                      <p className="text-slate-600 text-sm">Day 2</p>
                       <p className="text-slate-500 text-xs">$75</p>
                     </div>
                   </label>
@@ -810,7 +819,7 @@ Registration ID: ${registrationData.id}`);
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">Monday, March 10</span>
-                      <p className="text-slate-600 text-sm">Day 2</p>
+                      <p className="text-slate-600 text-sm">Day 3</p>
                       <p className="text-slate-500 text-xs">$75</p>
                     </div>
                   </label>
@@ -826,7 +835,7 @@ Registration ID: ${registrationData.id}`);
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">Tuesday, March 11</span>
-                      <p className="text-slate-600 text-sm">Day 3</p>
+                      <p className="text-slate-600 text-sm">Day 4</p>
                       <p className="text-slate-500 text-xs">$75</p>
                     </div>
                   </label>
@@ -842,23 +851,7 @@ Registration ID: ${registrationData.id}`);
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">Wednesday, March 12</span>
-                      <p className="text-slate-600 text-sm">Day 4 - Memorial Banquet</p>
-                      <p className="text-slate-500 text-xs">$75</p>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="dayToDayDates"
-                      value="thursday-march-13"
-                      checked={formData.dayToDayDates.includes('thursday-march-13')}
-                      onChange={handleInputChange}
-                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
-                    />
-                    <div className="ml-3">
-                      <span className="text-slate-700 font-medium">Thursday, March 13</span>
-                      <p className="text-slate-600 text-sm">Final Day</p>
+                      <p className="text-slate-600 text-sm">Final Day - Memorial Banquet</p>
                       <p className="text-slate-500 text-xs">$75</p>
                     </div>
                   </label>
