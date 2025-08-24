@@ -1,4 +1,4 @@
-  import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 
@@ -28,6 +28,11 @@ interface RegistrationData {
 }
 
 const RegisterForm = () => {
+  // Initialize EmailJS when component mounts
+  useEffect(() => {
+    emailjs.init('Nttdl3naYDqz18xNa');
+  }, []);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -173,12 +178,9 @@ const RegisterForm = () => {
 
       console.log('Registration saved to localStorage:', registrationData);
       
-      const paymentMethodDisplay = formData.paymentMethod === 'credit-card' ? 'Credit/Debit Card (Square)' :
-                                   formData.paymentMethod === 'zelle' ? 'Zelle (cocnl1945@gmail.com)' :
-                                   formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified';
-      
       try {
-        await emailjs.send(
+        console.log('Attempting to send confirmation email...');
+        const emailResult = await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
           {
@@ -202,12 +204,12 @@ const RegisterForm = () => {
             additional_notes: formData.additionalNotes || 'None',
             quantity: formData.quantity,
             registration_id: registrationData.id
-          },
-          'Nttdl3naYDqz18xNa'
+          }
         );
-        console.log('Registration email sent successfully');
+        console.log('Registration email sent successfully:', emailResult);
         
-        await emailjs.send(
+        console.log('Attempting to send internal notification email...');
+        const internalEmailResult = await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
           {
@@ -231,13 +233,20 @@ const RegisterForm = () => {
             additional_notes: formData.additionalNotes || 'None',
             quantity: formData.quantity,
             registration_id: registrationData.id
-          },
-          'Nttdl3naYDqz18xNa'
+          }
         );
-        console.log('Internal notification email sent');
+        console.log('Internal notification email sent successfully:', internalEmailResult);
         
       } catch (emailError) {
         console.error('Failed to send confirmation email:', emailError);
+        console.error('Email error details:', {
+          error: emailError,
+          message: emailError.message,
+          status: emailError.status,
+          text: emailError.text
+        });
+        // Don't fail the registration if email fails - just log it
+        alert('Registration saved successfully, but there was an issue sending the confirmation email. Please contact us at cocnl1945@gmail.com to confirm your registration.');
       }
       
       setShowPayment(true);
