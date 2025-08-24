@@ -12,22 +12,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Admin route without Layout wrapper */}
+        {/* Admin route - standalone without Layout */}
         <Route path="/admin" element={<AdminDashboard />} />
         
-        {/* All other routes with Layout wrapper */}
-        <Route path="/*" element={
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/register-form" element={<RegisterForm />} />
-              <Route path="/hotel" element={<Hotel />} />
-              <Route path="/vendors" element={<Vendors />} />
-              <Route path="/contact" element={<Contact />} />
-            </Routes>
-          </Layout>
-        } />
+        {/* Regular pages with Layout */}
+        <Route path="/" element={<Layout><Home /></Layout>} />
+        <Route path="/register" element={<Layout><Register /></Layout>} />
+        <Route path="/register-form" element={<Layout><RegisterForm /></Layout>} />
+        <Route path="/hotel" element={<Layout><Hotel /></Layout>} />
+        <Route path="/vendors" element={<Layout><Vendors /></Layout>} />
+        <Route path="/contact" element={<Layout><Contact /></Layout>} />
       </Routes>
     </Router>
   );
