@@ -1,4 +1,3 @@
-// CSV Export utility for registration data
 export interface RegistrationData {
   id: string;
   timestamp: string;
@@ -23,16 +22,15 @@ export interface RegistrationData {
   paymentStatus: 'pending' | 'paid' | 'partial' | 'refunded';
 }
 
-export const exportToCSV = (registrations: RegistrationData[], filename: string = 'registrations') => {
+export const exportToCSV = (registrations: RegistrationData[]) => {
   if (registrations.length === 0) {
     alert('No registrations to export');
     return;
   }
 
-  // Define CSV headers
   const headers = [
-    'ID',
-    'Registration Date',
+    'Registration ID',
+    'Date',
     'First Name',
     'Last Name',
     'Email',
@@ -54,12 +52,11 @@ export const exportToCSV = (registrations: RegistrationData[], filename: string 
     'Payment Status'
   ];
 
-  // Convert data to CSV format
   const csvContent = [
     headers.join(','),
     ...registrations.map(reg => [
       reg.id,
-      reg.timestamp,
+      new Date(reg.timestamp).toLocaleDateString(),
       `"${reg.firstName}"`,
       `"${reg.lastName}"`,
       reg.email,
@@ -68,85 +65,125 @@ export const exportToCSV = (registrations: RegistrationData[], filename: string 
       `"${reg.city}"`,
       reg.state,
       reg.zipCode,
-      `"${reg.registrationType}"`,
+      `"${reg.registrationType || 'Special Events Only'}"`,
       reg.quantity,
       `"${reg.attendeeNames.replace(/"/g, '""')}"`,
       `"${reg.attendeeContacts.replace(/"/g, '""')}"`,
-      `"${reg.specialEvents.join(', ')}"`,
+      `"${reg.specialEvents.join('; ')}"`,
       reg.vendorTables,
-      `"${reg.advertisements.join(', ')}"`,
-      `"${reg.dayToDayDates.join(', ')}"`,
+      `"${reg.advertisements.join('; ')}"`,
+      `"${reg.dayToDayDates.join('; ')}"`,
       `"${reg.additionalNotes.replace(/"/g, '""')}"`,
       reg.totalAmount,
       reg.paymentStatus
     ].join(','))
   ].join('\n');
 
-  // Create and download file
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `lectureship_registrations_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
-  
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 };
 
 export const exportSummaryReport = (registrations: RegistrationData[]) => {
-  const summary = {
-    totalRegistrations: registrations.length,
-    totalRevenue: registrations.reduce((sum, reg) => sum + reg.totalAmount, 0),
-    paidRegistrations: registrations.filter(reg => reg.paymentStatus === 'paid').length,
-    pendingPayments: registrations.filter(reg => reg.paymentStatus === 'pending').length,
-    registrationTypes: {} as { [key: string]: number },
-    vendorTables: registrations.reduce((sum, reg) => sum + reg.vendorTables, 0),
-    specialEvents: {} as { [key: string]: number }
+  if (registrations.length === 0) {
+    alert('No registrations to export');
+    return;
+  }
+
+  // Calculate statistics
+  const stats = {
+    total: registrations.length,
+    paid: registrations.filter(r => r.paymentStatus === 'paid').length,
+    pending: registrations.filter(r => r.paymentStatus === 'pending').length,
+    partial: registrations.filter(r => r.paymentStatus === 'partial').length,
+    refunded: registrations.filter(r => r.paymentStatus === 'refunded').length,
+    totalRevenue: registrations.filter(r => r.paymentStatus === 'paid').reduce((sum, r) => sum + r.totalAmount, 0),
+    pendingRevenue: registrations.filter(r => r.paymentStatus === 'pending').reduce((sum, r) => sum + r.totalAmount, 0),
   };
 
-  // Count registration types
+  // Registration type breakdown
+  const regTypes: { [key: string]: number } = {};
   registrations.forEach(reg => {
-    if (reg.registrationType) {
-      summary.registrationTypes[reg.registrationType] = (summary.registrationTypes[reg.registrationType] || 0) + 1;
-    }
+    const type = reg.registrationType || 'Special Events Only';
+    regTypes[type] = (regTypes[type] || 0) + 1;
   });
 
-  // Count special events
+  // Special events breakdown
+  const specialEvents: { [key: string]: number } = {};
   registrations.forEach(reg => {
     reg.specialEvents.forEach(event => {
-      summary.specialEvents[event] = (summary.specialEvents[event] || 0) + 1;
+      specialEvents[event] = (specialEvents[event] || 0) + 1;
     });
   });
 
-  const summaryContent = [
-    'CHURCHES OF CHRIST NATIONAL LECTURESHIP - REGISTRATION SUMMARY',
-    `Generated: ${new Date().toLocaleString()}`,
-    '',
-    'OVERVIEW',
-    `Total Registrations: ${summary.totalRegistrations}`,
-    `Total Revenue: $${summary.totalRevenue}`,
-    `Paid Registrations: ${summary.paidRegistrations}`,
-    `Pending Payments: ${summary.pendingPayments}`,
-    `Vendor Tables: ${summary.vendorTables}`,
-    '',
-    'REGISTRATION TYPES',
-    ...Object.entries(summary.registrationTypes).map(([type, count]) => `${type}: ${count}`),
-    '',
-    'SPECIAL EVENTS',
-    ...Object.entries(summary.specialEvents).map(([event, count]) => `${event}: ${count}`)
-  ].join('\n');
+  // Vendor tables
+  const vendorTables = registrations.filter(r => r.vendorTables > 0).length;
+  const totalTables = registrations.reduce((sum, r) => sum + r.vendorTables, 0);
 
-  const blob = new Blob([summaryContent], { type: 'text/plain;charset=utf-8;' });
+  // Advertisements
+  const advertisements = registrations.filter(r => r.advertisements.length > 0).length;
+  const totalAds = registrations.reduce((sum, r) => sum + r.advertisements.length, 0);
+
+  const reportContent = `
+CHURCHES OF CHRIST NATIONAL LECTURESHIP 2026
+REGISTRATION SUMMARY REPORT
+Generated: ${new Date().toLocaleString()}
+
+=== OVERVIEW ===
+Total Registrations: ${stats.total}
+Paid: ${stats.paid}
+Pending: ${stats.pending}
+Partial: ${stats.partial}
+Refunded: ${stats.refunded}
+
+=== REVENUE ===
+Total Revenue (Paid): $${stats.totalRevenue}
+Pending Revenue: $${stats.pendingRevenue}
+Total Potential: $${stats.totalRevenue + stats.pendingRevenue}
+
+=== REGISTRATION TYPES ===
+${Object.entries(regTypes).map(([type, count]) => `${type}: ${count}`).join('\n')}
+
+=== SPECIAL EVENTS ===
+${Object.entries(specialEvents).map(([event, count]) => `${event}: ${count}`).join('\n')}
+
+=== VENDOR INFORMATION ===
+Vendors: ${vendorTables}
+Total Tables: ${totalTables}
+
+=== ADVERTISEMENTS ===
+Advertisers: ${advertisements}
+Total Ads: ${totalAds}
+
+=== DETAILED REGISTRATIONS ===
+${registrations.map(reg => `
+ID: ${reg.id}
+Name: ${reg.firstName} ${reg.lastName}
+Email: ${reg.email}
+Phone: ${reg.phone}
+Registration: ${reg.registrationType || 'Special Events Only'}
+Amount: $${reg.totalAmount}
+Status: ${reg.paymentStatus}
+Date: ${new Date(reg.timestamp).toLocaleString()}
+${reg.specialEvents.length > 0 ? `Special Events: ${reg.specialEvents.join(', ')}` : ''}
+${reg.vendorTables > 0 ? `Vendor Tables: ${reg.vendorTables}` : ''}
+${reg.advertisements.length > 0 ? `Advertisements: ${reg.advertisements.join(', ')}` : ''}
+${reg.additionalNotes ? `Notes: ${reg.additionalNotes}` : ''}
+---`).join('\n')}
+`.trim();
+
+  const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
   link.setAttribute('href', url);
-  link.setAttribute('download', `lectureship_summary_${new Date().toISOString().split('T')[0]}.txt`);
+  link.setAttribute('download', `lectureship_summary_report_${new Date().toISOString().split('T')[0]}.txt`);
   link.style.visibility = 'hidden';
-  
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
