@@ -573,7 +573,7 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* Payment Method Selection */}
+            {/* Payment Method Selection - ALWAYS SHOW IF THERE'S A TOTAL */}
             {getTotalPrice() > 0 && (
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">💳 How will you pay?</h3>
