@@ -179,9 +179,10 @@ const RegisterForm = () => {
 
       console.log('Registration saved to localStorage:', registrationData);
       
+      // Send confirmation email immediately when registration is submitted
       try {
         console.log('Attempting to send confirmation email...');
-        const emailResult = await emailjs.send(
+        await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
           {
@@ -207,10 +208,10 @@ const RegisterForm = () => {
             registration_id: registrationData.id
           }
         );
-        console.log('Registration email sent successfully:', emailResult);
+        console.log('Confirmation email sent successfully');
         
-        console.log('Attempting to send internal notification email...');
-        const internalEmailResult = await emailjs.send(
+        // Also send notification to admin
+        await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
           {
@@ -236,7 +237,7 @@ const RegisterForm = () => {
             registration_id: registrationData.id
           }
         );
-        console.log('Internal notification email sent successfully:', internalEmailResult);
+        console.log('Admin notification sent successfully');
         
       } catch (emailError) {
         console.error('EmailJS failed, trying backup email system:', emailError);
@@ -255,15 +256,22 @@ const RegisterForm = () => {
           }
         } catch (backupError) {
           console.error('Both email systems failed:', backupError);
+          console.log('Registration saved but emails failed to send');
           
-          // Just log the failure - don't bother the user with mailto
-          console.log('Registration saved to localStorage but emails failed to send');
-          
-          // Optionally show a subtle message to the user
-          alert('Registration saved successfully! However, there was an issue sending the confirmation email. Please contact us at cocnl1945@gmail.com or (800) 609-6211 to confirm your registration was received.');
+          // Show user a message about email delay
+          alert(`Registration saved successfully! 
+
+However, there was an issue sending your confirmation email. 
+
+✅ Your registration has been recorded
+📧 You should receive a confirmation email within 24 hours
+📞 If you don't receive confirmation, please call (800) 609-6211
+
+Registration ID: ${registrationData.id}`);
         }
       }
       
+      // Show payment page
       setShowPayment(true);
       
     } catch (error: any) {
@@ -271,6 +279,89 @@ const RegisterForm = () => {
       setSubmitError(`Registration failed: ${error.message || 'Unknown error'}. Please try again or contact us at (800) 609-6211.`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // New function to handle email sending after payment
+  const sendConfirmationEmails = async (registrationData: RegistrationData) => {
+    try {
+      console.log('Attempting to send confirmation email...');
+      const emailResult = await emailjs.send(
+        'service_p49aqfy',
+        'template_oywsajv',
+        {
+          to_name: `${registrationData.firstName} ${registrationData.lastName}`,
+          to_email: registrationData.email,
+          from_name: 'Churches of Christ National Lectureship',
+          registration_type: registrationData.registrationType || 'Special Events Only',
+          total_amount: registrationData.totalAmount,
+          payment_method: formData.paymentMethod ? 
+            (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
+             formData.paymentMethod === 'zelle' ? 'Zelle' :
+             formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
+          attendee_names: registrationData.attendeeNames || 'N/A',
+          attendee_contacts: registrationData.attendeeContacts || 'N/A',
+          vendor_tables: registrationData.vendorTables > 0 ? `${registrationData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
+          advertisements: registrationData.advertisements.length > 0 ? registrationData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+          special_events: registrationData.specialEvents.length > 0 ? registrationData.specialEvents.join(', ') : 'None',
+          day_to_day_dates: registrationData.dayToDayDates.length > 0 ? registrationData.dayToDayDates.join(', ') : 'N/A',
+          phone: registrationData.phone,
+          address: `${registrationData.address}, ${registrationData.city}, ${registrationData.state} ${registrationData.zipCode}`,
+          additional_notes: registrationData.additionalNotes || 'None',
+          quantity: registrationData.quantity,
+          registration_id: registrationData.id
+        }
+      );
+      console.log('Registration email sent successfully:', emailResult);
+      
+      console.log('Attempting to send internal notification email...');
+      const internalEmailResult = await emailjs.send(
+        'service_p49aqfy',
+        'template_oywsajv',
+        {
+          to_name: 'Churches of Christ National Lectureship',
+          to_email: 'cocnl1945@gmail.com',
+          from_name: 'Website Registration System',
+          registration_type: `NEW REGISTRATION: ${registrationData.firstName} ${registrationData.lastName}`,
+          total_amount: registrationData.totalAmount,
+          payment_method: formData.paymentMethod ? 
+            (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
+             formData.paymentMethod === 'zelle' ? 'Zelle' :
+             formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
+          attendee_names: registrationData.attendeeNames || 'N/A',
+          attendee_contacts: registrationData.attendeeContacts || 'N/A',
+          vendor_tables: registrationData.vendorTables > 0 ? `${registrationData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
+          advertisements: registrationData.advertisements.length > 0 ? registrationData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+          special_events: registrationData.specialEvents.length > 0 ? registrationData.specialEvents.join(', ') : 'None',
+          day_to_day_dates: registrationData.dayToDayDates.length > 0 ? registrationData.dayToDayDates.join(', ') : 'N/A',
+          phone: registrationData.phone,
+          address: `${registrationData.address}, ${registrationData.city}, ${registrationData.state} ${registrationData.zipCode}`,
+          additional_notes: registrationData.additionalNotes || 'None',
+          quantity: registrationData.quantity,
+          registration_id: registrationData.id
+        }
+      );
+      console.log('Internal notification email sent successfully:', internalEmailResult);
+      
+    } catch (emailError) {
+      console.error('EmailJS failed, trying backup email system:', emailError);
+      
+      // Try backup email system
+      try {
+        const backupResult = await sendRegistrationEmail({
+          ...registrationData,
+          paymentMethod: formData.paymentMethod
+        });
+        
+        if (backupResult.success) {
+          console.log('Backup email sent successfully');
+        } else {
+          throw new Error('Backup email also failed');
+        }
+      } catch (backupError) {
+        console.error('Both email systems failed:', backupError);
+        console.log('Registration saved but emails failed to send');
+      }
     }
   };
 
@@ -479,7 +570,7 @@ const RegisterForm = () => {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
               <h3 className="text-xl font-bold text-yellow-900 mb-4">📋 Next Steps</h3>
               <ul className="space-y-2 text-yellow-800">
-                <li>• You should receive a confirmation email shortly</li>
+                <li>• You should have received a confirmation email</li>
                 <li>• We will confirm your registration once payment is received</li>
                 <li>• Contact us at cocnl1945@gmail.com with any questions</li>
                 <li>• Visit our website for updates: www.cocnl1945.org</li>
