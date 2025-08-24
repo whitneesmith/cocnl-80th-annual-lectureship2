@@ -4,6 +4,9 @@ import RegistrationTable from '../components/RegistrationTable';
 import { RegistrationData, exportToCSV, exportSummaryReport } from '../utils/csvExport';
 
 const AdminDashboard = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -13,18 +16,50 @@ const AdminDashboard = () => {
     pendingRevenue: 0
   });
 
-  // Load registrations from localStorage on component mount
+  // Admin password - you can change this to whatever you want
+  const ADMIN_PASSWORD = 'cocnl2026admin';
+
+  // Check if already authenticated on component mount
   useEffect(() => {
-    const savedRegistrations = localStorage.getItem('lectureship_registrations');
-    if (savedRegistrations) {
-      try {
-        const parsed = JSON.parse(savedRegistrations);
-        setRegistrations(parsed);
-      } catch (error) {
-        console.error('Error loading registrations:', error);
-      }
+    const authStatus = sessionStorage.getItem('admin_authenticated');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
     }
   }, []);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('admin_authenticated', 'true');
+      setPasswordError('');
+    } else {
+      setPasswordError('Incorrect password. Please try again.');
+      setPasswordInput('');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('admin_authenticated');
+    setPasswordInput('');
+    setPasswordError('');
+  };
+
+  // Load registrations from localStorage on component mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      const savedRegistrations = localStorage.getItem('lectureship_registrations');
+      if (savedRegistrations) {
+        try {
+          const parsed = JSON.parse(savedRegistrations);
+          setRegistrations(parsed);
+        } catch (error) {
+          console.error('Error loading registrations:', error);
+        }
+      }
+    }
+  }, [isAuthenticated]);
 
   // Calculate stats whenever registrations change
   useEffect(() => {
@@ -43,8 +78,10 @@ const AdminDashboard = () => {
 
   // Save registrations to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('lectureship_registrations', JSON.stringify(registrations));
-  }, [registrations]);
+    if (isAuthenticated) {
+      localStorage.setItem('lectureship_registrations', JSON.stringify(registrations));
+    }
+  }, [registrations, isAuthenticated]);
 
   const handleUpdatePaymentStatus = (id: string, status: 'pending' | 'paid' | 'partial' | 'refunded') => {
     setRegistrations(prev => 
@@ -125,6 +162,68 @@ const AdminDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <div className="mx-auto h-12 w-12 bg-slate-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-2xl">🔒</span>
+            </div>
+            <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
+              Admin Access Required
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Churches of Christ National Lectureship 2026
+            </p>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handlePasswordSubmit}>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Enter admin password"
+              />
+            </div>
+
+            {passwordError && (
+              <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
+                {passwordError}
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Access Dashboard
+              </button>
+            </div>
+
+            <div className="text-center">
+              <Link 
+                to="/"
+                className="text-blue-600 hover:text-blue-500 text-sm"
+              >
+                ← Back to Website
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -135,12 +234,20 @@ const AdminDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-gray-600">Churches of Christ National Lectureship 2026</p>
             </div>
-            <Link 
-              to="/"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              ← Back to Website
-            </Link>
+            <div className="flex gap-4">
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                🔓 Logout
+              </button>
+              <Link 
+                to="/"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                ← Back to Website
+              </Link>
+            </div>
           </div>
         </div>
       </div>
