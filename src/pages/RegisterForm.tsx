@@ -1,1 +1,1320 @@
-{ "absoluteFilePath": "/home/user/app/complete_registration_form.tsx", "content": "import React, { useState } from 'react';\nimport { Link } from 'react-router-dom';\nimport emailjs from '@emailjs/browser';\n\n// Registration data interface for localStorage\ninterface RegistrationData {\n id: string;\n timestamp: string;\n firstName: string;\n lastName: string;\n email: string;\n phone: string;\n address: string;\n city: string;\n state: string;\n zipCode: string;\n registrationType: string;\n quantity: number;\n attendeeNames: string;\n attendeeContacts: string;\n specialEvents: string[];\n vendorTables: number;\n advertisements: string[];\n dayToDayDates: string[];\n additionalNotes: string;\n totalAmount: number;\n paymentStatus: 'pending' | 'paid' | 'partial' | 'refunded';\n}\n\nconst RegisterForm = () => {\n const [formData, setFormData] = useState({\n firstName: '',\n lastName: '',\n email: '',\n phone: '',\n address: '',\n city: '',\n state: '',\n zipCode: '',\n registrationType: '',\n quantity: 1,\n attendeeNames: '',\n attendeeContacts: '',\n specialEvents: [] as string[],\n paymentMethod: '',\n additionalNotes: '',\n vendorTables: 0,\n advertisements: [] as string[],\n dayToDayDates: [] as string[]\n });\n\n const [showPayment, setShowPayment] = useState(false);\n const [isSubmitting, setIsSubmitting] = useState(false);\n const [submitError, setSubmitError] = useState('');\n\n const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {\n const { name, value, type } = e.target;\n \n if (type === 'checkbox') {\n const checked = (e.target as HTMLInputElement).checked;\n if (name === 'specialEvents') {\n setFormData(prev => ({\n ...prev,\n specialEvents: checked \n ? [...prev.specialEvents, value]\n : prev.specialEvents.filter(event => event !== value)\n }));\n } else if (name === 'advertisements') {\n setFormData(prev => ({\n ...prev,\n advertisements: checked \n ? [...prev.advertisements, value]\n : prev.advertisements.filter(ad => ad !== value)\n }));\n } else if (name === 'dayToDayDates') {\n setFormData(prev => ({\n ...prev,\n dayToDayDates: checked \n ? [...prev.dayToDayDates, value]\n : prev.dayToDayDates.filter(date => date !== value)\n }));\n }\n } else if (name === 'vendorTables') {\n setFormData(prev => ({\n ...prev,\n [name]: parseInt(value) || 0\n }));\n } else {\n setFormData(prev => ({\n ...prev,\n [name]: value\n }));\n }\n };\n\n const handleSubmit = async (e: React.FormEvent) => {\n e.preventDefault();\n setIsSubmitting(true);\n setSubmitError('');\n \n const hasRegistration = formData.registrationType !== '';\n const hasVendorTables = formData.vendorTables > 0;\n const hasAdvertisements = formData.advertisements.length > 0;\n const hasSpecialEvents = formData.specialEvents.length > 0;\n \n if (!hasRegistration && !hasVendorTables && !hasAdvertisements && !hasSpecialEvents) {\n alert('Please select at least one option: registration type, vendor tables, advertisements, or special events.');\n setIsSubmitting(false);\n return;\n }\n \n if (formData.registrationType === 'day-to-day' && formData.dayToDayDates.length === 0) {\n alert('Please select at least one day to attend for day-to-day registration.');\n setIsSubmitting(false);\n return;\n }\n \n if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || \n (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && \n !formData.attendeeNames.trim()) {\n alert('Please list all attendee names.');\n setIsSubmitting(false);\n return;\n }\n \n if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || \n (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && \n !formData.attendeeContacts.trim()) {\n alert('Please provide contact information for all attendees.');\n setIsSubmitting(false);\n return;\n }\n\n try {\n const registrationData: RegistrationData = {\n id: `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n timestamp: new Date().toISOString(),\n firstName: formData.firstName,\n lastName: formData.lastName,\n email: formData.email,\n phone: formData.phone,\n address: formData.address,\n city: formData.city,\n state: formData.state,\n zipCode: formData.zipCode,\n registrationType: formData.registrationType,\n quantity: formData.quantity,\n attendeeNames: formData.attendeeNames,\n attendeeContacts: formData.attendeeContacts,\n specialEvents: formData.specialEvents,\n vendorTables: formData.vendorTables,\n advertisements: formData.advertisements,\n dayToDayDates: formData.dayToDayDates,\n additionalNotes: formData.additionalNotes,\n totalAmount: getTotalPrice(),\n paymentStatus: 'pending'\n };\n\n const existingRegistrations = JSON.parse(localStorage.getItem('lectureship_registrations') || '[]');\n const updatedRegistrations = [registrationData, ...existingRegistrations];\n localStorage.setItem('lectureship_registrations', JSON.stringify(updatedRegistrations));\n\n console.log('Registration saved to localStorage:', registrationData);\n \n try {\n await emailjs.send(\n 'service_p49aqfy',\n 'template_oywsajv',\n {\n to_name: `${formData.firstName} ${formData.lastName}`,\n to_email: formData.email,\n from_name: 'Churches of Christ National Lectureship',\n registration_type: formData.registrationType || 'Special Events Only',\n total_amount: getTotalPrice(),\n attendee_names: formData.attendeeNames || 'N/A',\n attendee_contacts: formData.attendeeContacts || 'N/A',\n vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',\n advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',\n special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',\n day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',\n phone: formData.phone,\n address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,\n additional_notes: formData.additionalNotes || 'None',\n quantity: formData.quantity,\n registration_id: registrationData.id\n },\n 'Nttdl3naYDqz18xNa'\n );\n console.log('Registration email sent successfully');\n \n await emailjs.send(\n 'service_p49aqfy',\n 'template_oywsajv',\n {\n to_name: 'Churches of Christ National Lectureship',\n to_email: 'cocnl1945@gmail.com',\n from_name: 'Website Registration System',\n registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName}`,\n total_amount: getTotalPrice(),\n attendee_names: formData.attendeeNames || 'N/A',\n attendee_contacts: formData.attendeeContacts || 'N/A',\n vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',\n advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',\n special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',\n day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',\n phone: formData.phone,\n address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,\n additional_notes: formData.additionalNotes || 'None',\n quantity: formData.quantity,\n registration_id: registrationData.id\n },\n 'Nttdl3naYDqz18xNa'\n );\n console.log('Internal notification email sent');\n \n } catch (emailError) {\n console.error('Failed to send confirmation email:', emailError);\n }\n \n setShowPayment(true);\n \n } catch (error: any) {\n console.error('Registration submission error:', error);\n setSubmitError(`Registration failed: ${error.message || 'Unknown error'}. Please try again or contact us at (800) 609-6211.`);\n } finally {\n setIsSubmitting(false);\n }\n };\n\n const getRegistrationPrice = () => {\n const prices: { [key: string]: number } = {\n 'individual-early': 190,\n 'individual-regular': 210,\n 'georgia-early': 175,\n 'georgia-regular': 195,\n 'group-5-early': 925,\n 'group-5-regular': 975,\n 'group-10-early': 1800,\n 'group-10-regular': 1925,\n 'day-to-day': 75\n };\n const basePrice = prices[formData.registrationType] || 0;\n \n if (formData.registrationType === 'day-to-day') {\n return basePrice * formData.dayToDayDates.length;\n }\n \n if (formData.registrationType.includes('group-')) {\n return basePrice;\n }\n \n return basePrice * formData.quantity;\n };\n\n const getVendorTablePrice = () => {\n if (formData.vendorTables === 1) return 250;\n if (formData.vendorTables === 2) return 350;\n if (formData.vendorTables === 3) return 450;\n return 0;\n };\n\n const getAdvertisementPrice = () => {\n const adPrices: { [key: string]: number } = {\n 'full-page-color': 225,\n 'half-page-color': 175,\n 'full-page-bw': 180,\n 'half-page-bw': 125,\n 'quarter-page-bw': 80\n };\n \n return formData.advertisements.reduce((total, ad) => {\n return total + (adPrices[ad] || 0);\n }, 0);\n };\n\n const getSpecialEventsPrice = () => {\n let total = 0;\n if (formData.specialEvents.includes('memorial-banquet')) {\n total += 75;\n }\n return total;\n };\n\n const getTotalPrice = () => {\n const registrationPrice = getRegistrationPrice();\n const vendorPrice = getVendorTablePrice();\n const adPrice = getAdvertisementPrice();\n const specialEventsPrice = getSpecialEventsPrice();\n \n return registrationPrice + vendorPrice + adPrice + specialEventsPrice;\n };\n\n const getPaymentLinks = () => {\n const links: { [key: string]: string } = {\n 'individual-early': 'https://square.link/u/ieidynuy',\n 'individual-regular': 'https://square.link/u/VdIdderF',\n 'georgia-early': 'https://square.link/u/2xwzKLOF',\n 'georgia-regular': 'https://square.link/u/UACAsYNa',\n 'group-5-early': 'https://square.link/u/R8ten5jo',\n 'group-5-regular': 'https://square.link/u/kBhQ4aaj',\n 'group-10-early': 'https://square.link/u/8TgV0WNa',\n 'group-10-regular': 'https://square.link/u/c9dLJDyX',\n 'memorial-banquet': 'https://square.link/u/3EFbURkB',\n 'vendor-1-table': 'https://square.link/u/MuxoTkEI',\n 'vendor-2-tables': 'https://square.link/u/2RFSfiYv',\n 'vendor-3-tables': 'https://square.link/u/VeLw36WE',\n 'full-page-color': 'https://square.link/u/aDKuberx',\n 'half-page-color': 'https://square.link/u/soBLCNwD',\n 'full-page-bw': 'https://square.link/u/oqgDc3Ki',\n 'half-page-bw': 'https://square.link/u/orWjSbJa',\n 'quarter-page-bw': 'https://square.link/u/B7ON7VnH',\n 'day-to-day': 'https://square.link/u/day-to-day'\n };\n return links;\n };\n\n if (showPayment) {\n const paymentLinks = getPaymentLinks();\n const registrationPrice = getRegistrationPrice();\n const banquetSelected = formData.specialEvents.includes('memorial-banquet');\n\n return (\n <div className=\"min-h-screen bg-gradient-to-br from-slate-50 to-slate-100\">\n <div className=\"max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12\">\n <div className=\"bg-white rounded-2xl shadow-xl p-8\">\n <div className=\"text-center mb-8\">\n <div className=\"w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6\">\n <span className=\"text-white text-3xl\">✓</span>\n </div>\n <h2 className=\"text-3xl font-bold text-slate-900 mb-4\">Complete Your Payment</h2>\n <p className=\"text-slate-600\">\n Thank you {formData.firstName}! Please complete your payment below.\n </p>\n </div>\n\n <div className=\"bg-slate-50 rounded-lg p-6 mb-8\">\n <h3 className=\"text-xl font-bold text-slate-900 mb-4\">Registration Summary</h3>\n <div className=\"space-y-2 text-slate-700\">\n <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>\n <p><strong>Email:</strong> {formData.email}</p>\n <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>\n {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (\n <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {\n const dayNames: { [key: string]: string } = {\n 'sunday-march-9': 'Sunday, March 9',\n 'monday-march-10': 'Monday, March 10', \n 'tuesday-march-11': 'Tuesday, March 11',\n 'wednesday-march-12': 'Wednesday, March 12',\n 'thursday-march-13': 'Thursday, March 13'\n };\n return dayNames[date];\n }).join(', ')}</p>\n )}\n {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (\n <p><strong>Quantity:</strong> {formData.quantity} people</p>\n )}\n {formData.attendeeNames && <p><strong>Attendees:</strong> {formData.attendeeNames}</p>}\n {formData.attendeeContacts && (\n <p><strong>Attendee Contacts:</strong> {formData.attendeeContacts}</p>\n )}\n {formData.vendorTables > 0 && (\n <p><strong>Vendor Tables:</strong> {formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''}</p>\n )}\n {formData.advertisements.length > 0 && (\n <p><strong>Advertisements:</strong> {formData.advertisements.join(', ')}</p>\n )}\n {banquetSelected && <p><strong>John O. Williams Memorial Banquet:</strong> Additional banquet-only tickets (+$75 for non-Lectureship guests)</p>}\n </div>\n </div>\n\n <div className=\"space-y-6\">\n {formData.registrationType && (\n <div className=\"border border-slate-200 rounded-lg p-6\">\n <div className=\"flex justify-between items-center mb-4\">\n <div>\n <h4 className=\"text-lg font-semibold text-slate-900\">Registration Fee</h4>\n <p className=\"text-slate-600\">{formData.registrationType}</p>\n {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (\n <p className=\"text-slate-500 text-sm\">{formData.quantity} people × ${getRegistrationPrice() / formData.quantity}</p>\n )}\n </div>\n <div className=\"text-right\">\n <p className=\"text-2xl font-bold text-slate-900\">${getRegistrationPrice()}</p>\n </div>\n </div>\n \n <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n <a \n href={paymentLinks[formData.registrationType]}\n target=\"_blank\"\n rel=\"noopener noreferrer\"\n className=\"bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105\"\n >\n 💳 Pay with Card\n </a>\n \n <div className=\"bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Zelle to:</div>\n <div className=\"text-xs\">cocnl1945@gmail.com</div>\n </div>\n \n <div className=\"bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Mail Check</div>\n <div className=\"text-xs\">See details below</div>\n </div>\n </div>\n </div>\n )}\n\n {formData.vendorTables > 0 && (\n <div className=\"border border-orange-200 bg-orange-50 rounded-lg p-6\">\n <div className=\"flex justify-between items-center mb-4\">\n <div>\n <h4 className=\"text-lg font-semibold text-slate-900\">Vendor Tables</h4>\n <p className=\"text-slate-600\">{formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''}</p>\n <p className=\"text-orange-700 text-sm font-medium mt-1\">\n ⚠️ Must be paid in advance\n </p>\n </div>\n <div className=\"text-right\">\n <p className=\"text-2xl font-bold text-slate-900\">${getVendorTablePrice()}</p>\n </div>\n </div>\n \n <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n <a \n href={paymentLinks[`vendor-${formData.vendorTables}-table${formData.vendorTables > 1 ? 's' : ''}`]}\n target=\"_blank\"\n rel=\"noopener noreferrer\"\n className=\"bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105\"\n >\n 💳 Pay for Tables\n </a>\n \n <div className=\"bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Zelle to:</div>\n <div className=\"text-xs\">cocnl1945@gmail.com</div>\n </div>\n \n <div className=\"bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Mail Check</div>\n <div className=\"text-xs\">See details below</div>\n </div>\n </div>\n </div>\n )}\n\n {formData.advertisements.length > 0 && (\n <div className=\"border border-blue-200 bg-blue-50 rounded-lg p-6\">\n <div className=\"flex justify-between items-center mb-4\">\n <div>\n <h4 className=\"text-lg font-semibold text-slate-900\">Souvenir Book Advertisements</h4>\n <p className=\"text-slate-600\">{formData.advertisements.length} advertisement{formData.advertisements.length > 1 ? 's' : ''}</p>\n <p className=\"text-blue-700 text-sm font-medium mt-1\">\n 📧 Email ads to: cocnl1945@gmail.com by Feb 1, 2026\n </p>\n </div>\n <div className=\"text-right\">\n <p className=\"text-2xl font-bold text-slate-900\">${getAdvertisementPrice()}</p>\n </div>\n </div>\n \n <div className=\"space-y-3\">\n {formData.advertisements.map((ad, index) => (\n <div key={index} className=\"flex justify-between items-center bg-white rounded-lg p-3\">\n <span className=\"text-slate-700 font-medium\">\n {ad === 'full-page-color' && 'Full Page Color Ad'}\n {ad === 'half-page-color' && 'Half Page Color Ad'}\n {ad === 'full-page-bw' && 'Full Page B&W Ad'}\n {ad === 'half-page-bw' && 'Half Page B&W Ad'}\n {ad === 'quarter-page-bw' && 'Quarter Page B&W Ad'}\n </span>\n <div className=\"flex items-center space-x-3\">\n <span className=\"text-slate-600 font-bold\">\n ${ad === 'full-page-color' ? '225' : \n ad === 'half-page-color' ? '175' :\n ad === 'full-page-bw' ? '180' :\n ad === 'half-page-bw' ? '125' :\n ad === 'quarter-page-bw' ? '80' : '0'}\n </span>\n <a \n href={paymentLinks[ad]}\n target=\"_blank\"\n rel=\"noopener noreferrer\"\n className=\"bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors duration-200\"\n >\n 💳 Pay\n </a>\n </div>\n </div>\n ))}\n </div>\n \n <div className=\"mt-4 text-center\">\n <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n <div className=\"bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Zelle to:</div>\n <div className=\"text-xs\">cocnl1945@gmail.com</div>\n </div>\n \n <div className=\"bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center\">\n <div className=\"text-sm\">Mail Check</div>\n <div className=\"text-xs\">See details below</div>\n </div>\n </div>\n </div>\n </div>\n )}\n\n {banquetSelected && (\n <div className=\"border border-orange-200 bg-orange-50 rounded-lg p-6\">\n <div className=\"flex justify-between items-center mb-4\">\n <div>\n <h4 className=\"text-lg font-semibold text-slate-900\">John O. Williams Memorial Banquet</h4>\n <p className=\"text-slate-600\">Additional Banquet-Only Tickets • March 12, 2026 • 6:00 PM</p>\n <p className=\"text-orange-700 text-sm font-medium mt-1\">\n ⚠️ This is for banquet-only guests (not registered for Lectureship)\n </p>\n </div>\n <div className=\"text-right\">\n <p className=\"text-2xl font-bold text-slate-900\">$75</p>\n <p className=\"text-slate-600 text-sm\">per ticket</p>\n </div>\n </div>\n \n <a \n href={paymentLinks['memorial-banquet']}\n target=\"_blank\"\n rel=\"noopener noreferrer\"\n className=\"bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-3 px-6 rounded-lg inline-block text-center transition-all duration-200 transform hover:scale-105\"\n >\n 💳 Pay for Banquet-Only Tickets\n </a>\n </div>\n )}\n\n {getTotalPrice() > 0 && (\n <div className=\"bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6\">\n <div className=\"flex justify-between items-center\">\n <h3 className=\"text-2xl font-bold\">Total Amount Due</h3>\n <p className=\"text-3xl font-bold\">${getTotalPrice()}</p>\n </div>\n </div>\n )}\n </div>\n\n <div className=\"mt-8 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6\">\n <h3 className=\"text-xl font-bold mb-4\">Payment Instructions</h3>\n <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6\">\n <div>\n <h4 className=\"font-semibold text-slate-200 mb-2\">Digital Payments</h4>\n <ul className=\"text-slate-300 text-sm space-y-1\">\n <li>• <strong>Credit Card:</strong> Click \"Pay with Card\" buttons above</li>\n <li>• <strong>Zelle:</strong> Send to cocnl1945@gmail.com</li>\n <li>• <strong>Include:</strong> Your name and service type</li>\n </ul>\n </div>\n <div>\n <h4 className=\"font-semibold text-slate-200 mb-2\">Mail-In Payment</h4>\n <div className=\"text-slate-300 text-sm\">\n <p className=\"mb-2\">Make checks payable to:</p>\n <div className=\"bg-white/10 rounded p-2\">\n <p><strong>Churches of Christ National Lectureship</strong></p>\n <p>289 Jonesboro Road, STE #199</p>\n <p>McDonough, GA 30253</p>\n </div>\n </div>\n </div>\n </div>\n </div>\n\n <div className=\"mt-8 text-center space-x-4\">\n <button \n onClick={() => setShowPayment(false)}\n className=\"bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition-colors duration-200\"\n >\n ← Edit Registration\n </button>\n <Link \n to=\"/\"\n className=\"bg-white text-slate-600 font-bold py-3 px-6 rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors duration-200 inline-block\"\n >\n Return to Home\n </Link>\n </div>\n </div>\n </div>\n </div>\n );\n }\n\n return (\n <div className=\"min-h-screen bg-gradient-to-br from-slate-50 to-slate-100\">\n <section className=\"py-12 bg-gradient-to-r from-slate-800 to-slate-900 text-white\">\n <div className=\"max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center\">\n <h1 className=\"text-3xl md:text-4xl font-bold mb-4\">Registration Form</h1>\n <p className=\"text-xl text-slate-100\">\n Churches of Christ 80th Annual \"Historical\" National Lectureship\n </p>\n <p className=\"text-slate-200 mt-2\">March 9-13, 2026 • Atlanta, Georgia</p>\n </div>\n </section>\n\n <section className=\"py-12\">\n <div className=\"max-w-4xl mx-auto px-4 sm:px-6 lg:px-8\">\n <form onSubmit={handleSubmit} className=\"bg-white rounded-2xl shadow-xl p-8\">\n \n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">Contact Information</h3>\n \n <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6 mb-6\">\n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">First Name *</label>\n <input\n type=\"text\"\n name=\"firstName\"\n required\n value={formData.firstName}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"Enter your first name\"\n />\n </div>\n \n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">Last Name *</label>\n <input\n type=\"text\"\n name=\"lastName\"\n required\n value={formData.lastName}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"Enter your last name\"\n />\n </div>\n </div>\n\n <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6 mb-6\">\n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">Email Address *</label>\n <input\n type=\"email\"\n name=\"email\"\n required\n value={formData.email}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"your.email@example.com\"\n />\n </div>\n \n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">Phone Number *</label>\n <input\n type=\"tel\"\n name=\"phone\"\n required\n value={formData.phone}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"(555) 123-4567\"\n />\n </div>\n </div>\n\n <div className=\"mb-6\">\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">Street Address *</label>\n <input\n type=\"text\"\n name=\"address\"\n required\n value={formData.address}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"123 Main Street\"\n />\n </div>\n\n <div className=\"grid grid-cols-1 md:grid-cols-3 gap-6\">\n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">City *</label>\n <input\n type=\"text\"\n name=\"city\"\n required\n value={formData.city}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"Atlanta\"\n />\n </div>\n \n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">State *</label>\n <input\n type=\"text\"\n name=\"state\"\n required\n value={formData.state}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"GA\"\n />\n </div>\n \n <div>\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">ZIP Code *</label>\n <input\n type=\"text\"\n name=\"zipCode\"\n required\n value={formData.zipCode}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"30303\"\n />\n </div>\n </div>\n </div>\n\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">Registration Type</h3>\n \n <div className=\"bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4\">\n <div className=\"flex items-start\">\n <span className=\"text-blue-600 text-2xl mr-3 mt-1\">ℹ️</span>\n <div>\n <h4 className=\"font-semibold text-blue-800 mb-2\">Registration Options</h4>\n <p className=\"text-blue-700 text-sm\">\n You can register for the full Lectureship, select day-to-day attendance, or attend special events only. \n Registration type is optional if you're only purchasing vendor tables, advertisements, or special event tickets.\n </p>\n </div>\n </div>\n </div>\n \n <select\n name=\"registrationType\"\n value={formData.registrationType}\n onChange={handleInputChange}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n >\n <option value=\"\">No Lectureship Registration (Special Events/Vendor/Ads Only)</option>\n <option value=\"individual-early\">Individual Early Bird - $190 (Until Dec 31, 2025)</option>\n <option value=\"individual-regular\">Individual Regular - $210 (Starting Jan 1, 2026)</option>\n <option value=\"georgia-early\">Georgia Resident Early Bird - $175 (Until Dec 31, 2025)</option>\n <option value=\"georgia-regular\">Georgia Resident Regular - $195 (Starting Jan 1, 2026)</option>\n <option value=\"group-5-early\">Group 5 People Early Bird - $925 (Until Dec 31, 2025)</option>\n <option value=\"group-5-regular\">Group 5 People Regular - $975 (Starting Jan 1, 2026)</option>\n <option value=\"group-10-early\">Group 10 People Early Bird - $1,800 (Until Dec 31, 2025)</option>\n <option value=\"group-10-regular\">Group 10 People Regular - $1,925 (Starting Jan 1, 2026)</option>\n <option value=\"day-to-day\">Day-to-Day Registration - $75 per day</option>\n </select>\n </div>\n\n {formData.registrationType === 'day-to-day' && (\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">Select Days to Attend</h3>\n \n <div className=\"bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6\">\n <div className=\"flex items-start\">\n <span className=\"text-yellow-600 text-2xl mr-3 mt-1\">📅</span>\n <div>\n <h4 className=\"font-semibold text-yellow-800 mb-2\">Day-to-Day Registration</h4>\n <p className=\"text-yellow-700 text-sm mb-2\">\n <strong>$75 per day</strong> - Select which specific days you plan to attend.\n </p>\n <p className=\"text-yellow-700 text-sm\">\n <strong>Note:</strong> No amenities (meals, materials) are provided with day-to-day registration.\n </p>\n </div>\n </div>\n </div>\n\n <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"dayToDayDates\"\n value=\"sunday-march-9\"\n checked={formData.dayToDayDates.includes('sunday-march-9')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Sunday, March 9</span>\n <p className=\"text-slate-600 text-sm\">Opening Day</p>\n <p className=\"text-slate-500 text-xs\">$75</p>\n </div>\n </label>\n\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"dayToDayDates\"\n value=\"monday-march-10\"\n checked={formData.dayToDayDates.includes('monday-march-10')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Monday, March 10</span>\n <p className=\"text-slate-600 text-sm\">Day 2</p>\n <p className=\"text-slate-500 text-xs\">$75</p>\n </div>\n </label>\n\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"dayToDayDates\"\n value=\"tuesday-march-11\"\n checked={formData.dayToDayDates.includes('tuesday-march-11')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Tuesday, March 11</span>\n <p className=\"text-slate-600 text-sm\">Day 3</p>\n <p className=\"text-slate-500 text-xs\">$75</p>\n </div>\n </label>\n\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"dayToDayDates\"\n value=\"wednesday-march-12\"\n checked={formData.dayToDayDates.includes('wednesday-march-12')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Wednesday, March 12</span>\n <p className=\"text-slate-600 text-sm\">Day 4 - Memorial Banquet</p>\n <p className=\"text-slate-500 text-xs\">$75</p>\n </div>\n </label>\n\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"dayToDayDates\"\n value=\"thursday-march-13\"\n checked={formData.dayToDayDates.includes('thursday-march-13')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Thursday, March 13</span>\n <p className=\"text-slate-600 text-sm\">Final Day</p>\n <p className=\"text-slate-500 text-xs\">$75</p>\n </div>\n </label>\n </div>\n\n {formData.dayToDayDates.length > 0 && (\n <div className=\"mt-4 p-4 bg-slate-50 rounded-lg\">\n <div className=\"flex justify-between items-center\">\n <span className=\"text-slate-700\">\n Selected: {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''}\n </span>\n <span className=\"text-slate-900 font-bold text-lg\">\n Total: ${formData.dayToDayDates.length * 75}\n </span>\n </div>\n </div>\n )}\n\n {formData.dayToDayDates.length === 0 && (\n <div className=\"mt-4 p-4 bg-red-50 border border-red-200 rounded-lg\">\n <p className=\"text-red-700 text-sm\">\n ⚠️ Please select at least one day to attend for day-to-day registration.\n </p>\n </div>\n )}\n </div>\n )}\n\n {formData.registrationType && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day' && (\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">Number of People</h3>\n <div className=\"bg-green-50 border border-green-200 rounded-lg p-4 mb-4\">\n <div className=\"flex items-start\">\n <span className=\"text-green-600 text-xl mr-3 mt-1\">👤</span>\n <div>\n <h4 className=\"font-semibold text-green-800 mb-2\">Individual Registration</h4>\n <p className=\"text-green-700 text-sm\">\n How many people are you registering? Each person gets the same registration type.\n </p>\n <p className=\"text-green-600 text-xs mt-1\">\n 💡 For 5+ people, select a Group registration above for better rates!\n </p>\n </div>\n </div>\n </div>\n <div className=\"flex items-center space-x-4\">\n <label className=\"block text-sm font-medium text-slate-700\">\n Quantity:\n </label>\n <select\n name=\"quantity\"\n value={formData.quantity}\n onChange={handleInputChange}\n className=\"px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n >\n {[1,2,3,4].map(num => (\n <option key={num} value={num}>{num} {num === 1 ? 'person' : 'people'}</option>\n ))}\n </select>\n <div className=\"text-slate-600\">\n × ${formData.registrationType.includes('individual-early') ? '190' : \n formData.registrationType.includes('individual-regular') ? '210' :\n formData.registrationType.includes('georgia-early') ? '175' :\n formData.registrationType.includes('georgia-regular') ? '195' : '0'} = \n <span className=\"font-bold text-slate-900 ml-1\">${getRegistrationPrice()}</span>\n </div>\n </div>\n </div>\n )}\n\n {((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || \n (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && (\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">\n {formData.registrationType.includes('group-') ? 'Group Attendee Names' : 'All Attendee Names'}\n </h3>\n <div className={`${formData.registrationType.includes('group-') ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} border rounded-lg p-4 mb-4`}>\n <div className=\"flex items-start\">\n <span className={`${formData.registrationType.includes('group-') ? 'text-blue-600' : 'text-purple-600'} text-xl mr-3 mt-1`}>\n {formData.registrationType.includes('group-') ? '👥' : '👤'}\n </span>\n <div>\n <h4 className={`font-semibold ${formData.registrationType.includes('group-') ? 'text-blue-800' : 'text-purple-800'} mb-2`}>\n {formData.registrationType.includes('group-') ? 'Group Registration' : 'Multiple Individual Registrations'}\n </h4>\n <p className={`${formData.registrationType.includes('group-') ? 'text-blue-700' : 'text-purple-700'} text-sm`}>\n {formData.registrationType.includes('group-') \n ? `Please list all ${formData.registrationType.includes('group-5') ? '5' : '10'} attendees below, including yourself as the primary contact.`\n : `Please list all ${formData.quantity} attendees below, including yourself as the primary contact.`\n }\n </p>\n </div>\n </div>\n </div>\n <label className=\"block text-slate-700 text-sm font-bold mb-2\">\n All Attendee Names *\n </label>\n <textarea\n name=\"attendeeNames\"\n value={formData.attendeeNames}\n onChange={handleInputChange}\n placeholder={formData.registrationType.includes('group-') \n ? `List all ${formData.registrationType.includes('group-5') ? '5' : '10'} attendees, one name per line:\\n\\n${formData.firstName} ${formData.lastName} (Primary Contact)\\nJohn Smith\\nMary Johnson\\nBob Wilson\\nSarah Davis${formData.registrationType.includes('group-10') ? `\\nMike Brown\\nLisa Taylor\\nDavid Lee\\nEmma White\\nChris Garcia` : ''}`\n : `List all ${formData.quantity} attendees, one name per line:\\n\\n${formData.firstName} ${formData.lastName} (Primary Contact)${formData.quantity > 1 ? `\\n${Array.from({length: formData.quantity - 1}, (_, i) => `Person ${i + 2} Name`).join('\\n')}` : ''}`\n }\n className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-500 h-32\"\n required\n />\n <p className=\"text-xs text-slate-600 mt-1\">\n {formData.registrationType.includes('group-') \n ? `Please include yourself as the first name, then list the remaining ${formData.registrationType.includes('group-5') ? '4' : '9'} attendees`\n : `Please include yourself as the first name, then list the remaining ${formData.quantity - 1} attendee${formData.quantity > 2 ? 's' : ''}`\n }\n </p>\n\n <div className=\"mt-6\">\n <label className=\"block text-slate-700 text-sm font-bold mb-2\">\n Attendee Contact Information\n </label>\n <div className=\"bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3\">\n <p className=\"text-yellow-800 text-sm\">\n 📞 Please provide phone numbers and email addresses for all attendees (except yourself - we already have yours above)\n </p>\n </div>\n <textarea\n name=\"attendeeContacts\"\n value={formData.attendeeContacts}\n onChange={handleInputChange}\n placeholder={formData.registrationType.includes('group-') \n ? `Provide contact info for the other ${formData.registrationType.includes('group-5') ? '4' : '9'} attendees:\\n\\nJohn Smith - (555) 123-4567 - john@email.com\\nMary Johnson - (555) 234-5678 - mary@email.com\\nBob Wilson - (555) 345-6789 - bob@email.com\\nSarah Davis - (555) 456-7890 - sarah@email.com${formData.registrationType.includes('group-10') ? `\\nMike Brown - (555) 567-8901 - mike@email.com\\nLisa Taylor - (555) 678-9012 - lisa@email.com\\nDavid Lee - (555) 789-0123 - david@email.com\\nEmma White - (555) 890-1234 - emma@email.com\\nChris Garcia - (555) 901-2345 - chris@email.com` : ''}`\n : formData.quantity > 1 ? `Provide contact info for the other ${formData.quantity - 1} attendee${formData.quantity > 2 ? 's' : ''}:\\n\\n${Array.from({length: formData.quantity - 1}, (_, i) => `Person ${i + 2} - (555) 123-456${i + 2} - person${i + 2}@email.com`).join('\\n')}` : 'No additional contact info needed for single registration'\n }\n className=\"w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-500 h-32\"\n required={formData.quantity > 1 || formData.registrationType.includes('group-')}\n />\n <p className=\"text-xs text-slate-600 mt-1\">\n Format: Name - Phone - Email (one person per line)\n </p>\n </div>\n </div>\n )}\n\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">Special Events</h3>\n \n <div className=\"bg-green-50 border border-green-200 rounded-lg p-4 mb-6\">\n <div className=\"flex items-start\">\n <span className=\"text-green-600 text-2xl mr-3 mt-1\">🎉</span>\n <div>\n <h4 className=\"font-semibold text-green-800 mb-2\">Memorial Banquet Information</h4>\n <p className=\"text-green-700 text-sm mb-2\">\n <strong>If you registered for the full Lectureship above:</strong> Your banquet ticket is already included!\n </p>\n <p className=\"text-green-700 text-sm\">\n <strong>The $75 option below is for:</strong> People who want to attend ONLY the banquet \n (not registering for the full Lectureship) or want to bring additional guests.\n </p>\n </div>\n </div>\n </div>\n\n <div className=\"space-y-4\">\n <label className=\"flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer\">\n <input\n type=\"checkbox\"\n name=\"specialEvents\"\n value=\"memorial-banquet\"\n checked={formData.specialEvents.includes('memorial-banquet')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">John O. Williams Memorial Banquet</span>\n <p className=\"text-slate-600 text-sm font-medium\">March 12, 2026 • 6:00 PM • $75 per ticket</p>\n <p className=\"text-slate-500 text-xs mt-1\">\n For banquet-only guests or additional tickets for family/friends\n </p>\n </div>\n </label>\n </div>\n </div>\n\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">🏪 Vendor Tables</h3>\n \n <div className=\"bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6\">\n <div className=\"flex items-start\">\n <span className=\"text-orange-600 text-2xl mr-3 mt-1\">⚠️</span>\n <div>\n <h4 className=\"font-semibold text-orange-800 mb-2\">Vendor Requirements</h4>\n <p className=\"text-orange-700 text-sm mb-2\">\n <strong>All vendors MUST register</strong> for the Lectureship in addition to purchasing vendor tables (for insurance purposes).\n </p>\n <p className=\"text-orange-700 text-sm\">\n Vendor table cost must be paid in advance. Space allocated on first-come basis.\n </p>\n </div>\n </div>\n </div>\n\n <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4 mb-4\">\n <div className=\"border border-slate-200 rounded-lg p-4 text-center\">\n <h4 className=\"font-semibold text-slate-900 mb-2\">1 Table</h4>\n <p className=\"text-2xl font-bold text-slate-600 mb-2\">$250</p>\n <label className=\"flex items-center justify-center\">\n <input\n type=\"radio\"\n name=\"vendorTables\"\n value=\"1\"\n checked={formData.vendorTables === 1}\n onChange={handleInputChange}\n className=\"mr-2\"\n />\n Select\n </label>\n </div>\n \n <div className=\"border border-slate-200 rounded-lg p-4 text-center\">\n <h4 className=\"font-semibold text-slate-900 mb-2\">2 Tables</h4>\n <p className=\"text-2xl font-bold text-slate-600 mb-2\">$350</p>\n <label className=\"flex items-center justify-center\">\n <input\n type=\"radio\"\n name=\"vendorTables\"\n value=\"2\"\n checked={formData.vendorTables === 2}\n onChange={handleInputChange}\n className=\"mr-2\"\n />\n Select\n </label>\n </div>\n \n <div className=\"border border-slate-200 rounded-lg p-4 text-center\">\n <h4 className=\"font-semibold text-slate-900 mb-2\">3 Tables</h4>\n <p className=\"text-2xl font-bold text-slate-600 mb-2\">$450</p>\n <label className=\"flex items-center justify-center\">\n <input\n type=\"radio\"\n name=\"vendorTables\"\n value=\"3\"\n checked={formData.vendorTables === 3}\n onChange={handleInputChange}\n className=\"mr-2\"\n />\n Select\n </label>\n </div>\n </div>\n\n <label className=\"flex items-center\">\n <input\n type=\"radio\"\n name=\"vendorTables\"\n value=\"0\"\n checked={formData.vendorTables === 0}\n onChange={handleInputChange}\n className=\"mr-2\"\n />\n <span className=\"text-slate-700\">No vendor tables needed</span>\n </label>\n </div>\n\n <div className=\"mb-8\">\n <h3 className=\"text-2xl font-bold text-slate-900 mb-6\">📧 Souvenir Book Advertisements</h3>\n \n <div className=\"bg-red-50 border border-red-200 rounded-lg p-4 mb-6\">\n <div className=\"flex items-start\">\n <span className=\"text-red-600 text-2xl mr-3 mt-1\">📅</span>\n <div>\n <h4 className=\"font-semibold text-red-800 mb-2\">Advertisement Deadline</h4>\n <p className=\"text-red-700 text-sm mb-2\">\n <strong>All ads MUST BE RECEIVED by February 1, 2026</strong>\n </p>\n <p className=\"text-red-700 text-sm\">\n Email camera-ready ads to: <strong>cocnl1945@gmail.com</strong>\n </p>\n </div>\n </div>\n </div>\n\n <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6\">\n <div className=\"bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4\">\n <h4 className=\"text-lg font-semibold text-blue-900 mb-4\">Color Advertisements</h4>\n <div className=\"space-y-3\">\n <label className=\"flex items-start\">\n <input\n type=\"checkbox\"\n name=\"advertisements\"\n value=\"full-page-color\"\n checked={formData.advertisements.includes('full-page-color')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Full Page Digital Color Ad</span>\n <p className=\"text-blue-600 font-bold\">$225.00</p>\n </div>\n </label>\n \n <label className=\"flex items-start\">\n <input\n type=\"checkbox\"\n name=\"advertisements\"\n value=\"half-page-color\"\n checked={formData.advertisements.includes('half-page-color')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Half Page Digital Color Ad</span>\n <p className=\"text-blue-600 font-bold\">$175.00</p>\n </div>\n </label>\n </div>\n </div>\n\n <div className=\"bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4\">\n <h4 className=\"text-lg font-semibold text-gray-900 mb-4\">Black & White Advertisements</h4>\n <div className=\"space-y-3\">\n <label className=\"flex items-start\">\n <input\n type=\"checkbox\"\n name=\"advertisements\"\n value=\"full-page-bw\"\n checked={formData.advertisements.includes('full-page-bw')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Full Page Digital B/W Ad</span>\n <p className=\"text-gray-600 font-bold\">$180.00</p>\n </div>\n </label>\n \n <label className=\"flex items-start\">\n <input\n type=\"checkbox\"\n name=\"advertisements\"\n value=\"half-page-bw\"\n checked={formData.advertisements.includes('half-page-bw')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Half Page Digital B/W Ad</span>\n <p className=\"text-gray-600 font-bold\">$125.00</p>\n </div>\n </label>\n \n <label className=\"flex items-start\">\n <input\n type=\"checkbox\"\n name=\"advertisements\"\n value=\"quarter-page-bw\"\n checked={formData.advertisements.includes('quarter-page-bw')}\n onChange={handleInputChange}\n className=\"mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded\"\n />\n <div className=\"ml-3\">\n <span className=\"text-slate-700 font-medium\">Quarter Page Digital B/W Ad</span>\n <p className=\"text-gray-600 font-bold\">$80.00</p>\n </div>\n </label>\n </div>\n </div>\n </div>\n </div>\n\n {(formData.registrationType || formData.vendorTables > 0 || formData.advertisements.length > 0 || formData.specialEvents.length > 0) && (\n <div className=\"mb-8\">\n <div className=\"bg-slate-50 border border-slate-200 rounded-lg p-6\">\n <h3 className=\"text-xl font-bold text-slate-900 mb-4\">💰 Price Summary</h3>\n <div className=\"space-y-2 text-slate-700\">\n {formData.registrationType && (\n <div className=\"flex justify-between\">\n <span>\n Registration ({formData.registrationType})\n {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (\n <span className=\"text-sm text-slate-500 block\">\n {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''} × $75\n </span>\n )}\n </span>\n <span className=\"font-bold\">${getRegistrationPrice()}</span>\n </div>\n )}\n {formData.vendorTables > 0 && (\n <div className=\"flex justify-between\">\n <span>Vendor Tables ({formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''})</span>\n <span className=\"font-bold\">${getVendorTablePrice()}</span>\n </div>\n )}\n {formData.advertisements.length > 0 && (\n <div className=\"flex justify-between\">\n <span>Advertisements ({formData.advertisements.length} ad{formData.advertisements.length > 1 ? 's' : ''})</span>\n <span className=\"font-bold\">${getAdvertisementPrice()}</span>\n </div>\n )}\n {formData.specialEvents.includes('memorial-banquet') && (\n <div className=\"flex justify-between\">\n <span>Memorial Banquet Tickets</span>\n <span className=\"font-bold\">$75</span>\n </div>\n )}\n {getTotalPrice() > 0 && (\n <div className=\"border-t border-slate-300 pt-2 mt-4\">\n <div className=\"flex justify-between text-lg font-bold text-slate-900\">\n <span>Total</span>\n <span>${getTotalPrice()}</span>\n </div>\n </div>\n )}\n </div>\n </div>\n </div>\n )}\n\n <div className=\"mb-8\">\n <label className=\"block text-sm font-medium text-slate-700 mb-2\">\n Additional Notes\n </label>\n <textarea\n name=\"additionalNotes\"\n value={formData.additionalNotes}\n onChange={handleInputChange}\n rows={4}\n className=\"w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500\"\n placeholder=\"Any special accommodations or additional information...\"\n />\n </div>\n\n <div className=\"text-center\">\n {submitError && (\n <div className=\"mb-4 p-4 bg-red-50 border border-red-200 rounded-lg\">\n <p className=\"text-red-700 font-medium\">❌ {submitError}</p>\n <p className=\"text-red-600 text-sm mt-1\">Please try again or contact us at (800) 609-6211</p>\n </div>\n )}\n \n <button\n type=\"submit\"\n disabled={isSubmitting}\n className={`${\n isSubmitting \n ? 'bg-gray-400 cursor-not-allowed' \n : 'bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 transform hover:scale-105'\n } text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all duration-200 text-lg`}\n >\n {isSubmitting ? (\n <>\n <span className=\"inline-block animate-spin mr-2\">⏳</span>\n Submitting Registration...\n </>\n ) : (\n 'Continue to Payment'\n )}\n </button>\n </div>\n </form>\n </div>\n </section>\n </div>\n );\n};\n\nexport default RegisterForm;", "taskTitle": "Create complete registration form" }
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
+
+// Registration data interface for localStorage
+interface RegistrationData {
+  id: string;
+  timestamp: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  registrationType: string;
+  quantity: number;
+  attendeeNames: string;
+  attendeeContacts: string;
+  specialEvents: string[];
+  vendorTables: number;
+  advertisements: string[];
+  dayToDayDates: string[];
+  additionalNotes: string;
+  totalAmount: number;
+  paymentStatus: 'pending' | 'paid' | 'partial' | 'refunded';
+}
+
+const RegisterForm = () => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    registrationType: '',
+    quantity: 1,
+    attendeeNames: '',
+    attendeeContacts: '',
+    specialEvents: [] as string[],
+    paymentMethod: '',
+    additionalNotes: '',
+    vendorTables: 0,
+    advertisements: [] as string[],
+    dayToDayDates: [] as string[]
+  });
+
+  const [showPayment, setShowPayment] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      if (name === 'specialEvents') {
+        setFormData(prev => ({
+          ...prev,
+          specialEvents: checked 
+            ? [...prev.specialEvents, value]
+            : prev.specialEvents.filter(event => event !== value)
+        }));
+      } else if (name === 'advertisements') {
+        setFormData(prev => ({
+          ...prev,
+          advertisements: checked 
+            ? [...prev.advertisements, value]
+            : prev.advertisements.filter(ad => ad !== value)
+        }));
+      } else if (name === 'dayToDayDates') {
+        setFormData(prev => ({
+          ...prev,
+          dayToDayDates: checked 
+            ? [...prev.dayToDayDates, value]
+            : prev.dayToDayDates.filter(date => date !== value)
+        }));
+      }
+    } else if (name === 'vendorTables') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: parseInt(value) || 0
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError('');
+    
+    const hasRegistration = formData.registrationType !== '';
+    const hasVendorTables = formData.vendorTables > 0;
+    const hasAdvertisements = formData.advertisements.length > 0;
+    const hasSpecialEvents = formData.specialEvents.length > 0;
+    
+    if (!hasRegistration && !hasVendorTables && !hasAdvertisements && !hasSpecialEvents) {
+      alert('Please select at least one option: registration type, vendor tables, advertisements, or special events.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (formData.registrationType === 'day-to-day' && formData.dayToDayDates.length === 0) {
+      alert('Please select at least one day to attend for day-to-day registration.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
+         (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
+        !formData.attendeeNames.trim()) {
+      alert('Please list all attendee names.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
+         (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && 
+        !formData.attendeeContacts.trim()) {
+      alert('Please provide contact information for all attendees.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const registrationData: RegistrationData = {
+        id: `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        registrationType: formData.registrationType,
+        quantity: formData.quantity,
+        attendeeNames: formData.attendeeNames,
+        attendeeContacts: formData.attendeeContacts,
+        specialEvents: formData.specialEvents,
+        vendorTables: formData.vendorTables,
+        advertisements: formData.advertisements,
+        dayToDayDates: formData.dayToDayDates,
+        additionalNotes: formData.additionalNotes,
+        totalAmount: getTotalPrice(),
+        paymentStatus: 'pending'
+      };
+
+      const existingRegistrations = JSON.parse(localStorage.getItem('lectureship_registrations') || '[]');
+      const updatedRegistrations = [registrationData, ...existingRegistrations];
+      localStorage.setItem('lectureship_registrations', JSON.stringify(updatedRegistrations));
+
+      console.log('Registration saved to localStorage:', registrationData);
+      
+      try {
+        await emailjs.send(
+          'service_p49aqfy',
+          'template_oywsajv',
+          {
+            to_name: `${formData.firstName} ${formData.lastName}`,
+            to_email: formData.email,
+            from_name: 'Churches of Christ National Lectureship',
+            registration_type: formData.registrationType || 'Special Events Only',
+            total_amount: getTotalPrice(),
+            attendee_names: formData.attendeeNames || 'N/A',
+            attendee_contacts: formData.attendeeContacts || 'N/A',
+            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
+            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
+            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
+            phone: formData.phone,
+            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+            additional_notes: formData.additionalNotes || 'None',
+            quantity: formData.quantity,
+            registration_id: registrationData.id
+          },
+          'Nttdl3naYDqz18xNa'
+        );
+        console.log('Registration email sent successfully');
+        
+        await emailjs.send(
+          'service_p49aqfy',
+          'template_oywsajv',
+          {
+            to_name: 'Churches of Christ National Lectureship',
+            to_email: 'cocnl1945@gmail.com',
+            from_name: 'Website Registration System',
+            registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName}`,
+            total_amount: getTotalPrice(),
+            attendee_names: formData.attendeeNames || 'N/A',
+            attendee_contacts: formData.attendeeContacts || 'N/A',
+            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
+            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
+            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
+            phone: formData.phone,
+            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+            additional_notes: formData.additionalNotes || 'None',
+            quantity: formData.quantity,
+            registration_id: registrationData.id
+          },
+          'Nttdl3naYDqz18xNa'
+        );
+        console.log('Internal notification email sent');
+        
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
+      
+      setShowPayment(true);
+      
+    } catch (error: any) {
+      console.error('Registration submission error:', error);
+      setSubmitError(`Registration failed: ${error.message || 'Unknown error'}. Please try again or contact us at (800) 609-6211.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getRegistrationPrice = () => {
+    const prices: { [key: string]: number } = {
+      'individual-early': 190,
+      'individual-regular': 210,
+      'georgia-early': 175,
+      'georgia-regular': 195,
+      'group-5-early': 925,
+      'group-5-regular': 975,
+      'group-10-early': 1800,
+      'group-10-regular': 1925,
+      'day-to-day': 75
+    };
+    const basePrice = prices[formData.registrationType] || 0;
+    
+    if (formData.registrationType === 'day-to-day') {
+      return basePrice * formData.dayToDayDates.length;
+    }
+    
+    if (formData.registrationType.includes('group-')) {
+      return basePrice;
+    }
+    
+    return basePrice * formData.quantity;
+  };
+
+  const getVendorTablePrice = () => {
+    if (formData.vendorTables === 1) return 250;
+    if (formData.vendorTables === 2) return 350;
+    if (formData.vendorTables === 3) return 450;
+    return 0;
+  };
+
+  const getAdvertisementPrice = () => {
+    const adPrices: { [key: string]: number } = {
+      'full-page-color': 225,
+      'half-page-color': 175,
+      'full-page-bw': 180,
+      'half-page-bw': 125,
+      'quarter-page-bw': 80
+    };
+    
+    return formData.advertisements.reduce((total, ad) => {
+      return total + (adPrices[ad] || 0);
+    }, 0);
+  };
+
+  const getSpecialEventsPrice = () => {
+    let total = 0;
+    if (formData.specialEvents.includes('memorial-banquet')) {
+      total += 75;
+    }
+    // Women's luncheon removed - no longer adds $60
+    return total;
+  };
+
+  const getTotalPrice = () => {
+    const registrationPrice = getRegistrationPrice();
+    const vendorPrice = getVendorTablePrice();
+    const adPrice = getAdvertisementPrice();
+    const specialEventsPrice = getSpecialEventsPrice();
+    
+    return registrationPrice + vendorPrice + adPrice + specialEventsPrice;
+  };
+
+  const getPaymentLinks = () => {
+    const links: { [key: string]: string } = {
+      'individual-early': 'https://square.link/u/ieidynuy',
+      'individual-regular': 'https://square.link/u/VdIdderF',
+      'georgia-early': 'https://square.link/u/2xwzKLOF',
+      'georgia-regular': 'https://square.link/u/UACAsYNa',
+      'group-5-early': 'https://square.link/u/R8ten5jo',
+      'group-5-regular': 'https://square.link/u/kBhQ4aaj',
+      'group-10-early': 'https://square.link/u/8TgV0WNa',
+      'group-10-regular': 'https://square.link/u/c9dLJDyX',
+      'memorial-banquet': 'https://square.link/u/3EFbURkB',
+      'vendor-1-table': 'https://square.link/u/MuxoTkEI',
+      'vendor-2-tables': 'https://square.link/u/2RFSfiYv',
+      'vendor-3-tables': 'https://square.link/u/VeLw36WE',
+      'full-page-color': 'https://square.link/u/aDKuberx',
+      'half-page-color': 'https://square.link/u/soBLCNwD',
+      'full-page-bw': 'https://square.link/u/oqgDc3Ki',
+      'half-page-bw': 'https://square.link/u/orWjSbJa',
+      'quarter-page-bw': 'https://square.link/u/B7ON7VnH',
+      'day-to-day': 'https://square.link/u/day-to-day'
+    };
+    return links;
+  };
+
+  if (showPayment) {
+    const paymentLinks = getPaymentLinks();
+    const registrationPrice = getRegistrationPrice();
+    const banquetSelected = formData.specialEvents.includes('memorial-banquet');
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white text-3xl">✓</span>
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">Complete Your Payment</h2>
+              <p className="text-slate-600">
+                Thank you {formData.firstName}! Please complete your payment below.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-6 mb-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-4">Registration Summary</h3>
+              <div className="space-y-2 text-slate-700">
+                <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
+                <p><strong>Email:</strong> {formData.email}</p>
+                <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
+                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
+                    const dayNames: { [key: string]: string } = {
+                      'sunday-march-9': 'Sunday, March 9',
+                      'monday-march-10': 'Monday, March 10', 
+                      'tuesday-march-11': 'Tuesday, March 11',
+                      'wednesday-march-12': 'Wednesday, March 12',
+                      'thursday-march-13': 'Thursday, March 13'
+                    };
+                    return dayNames[date];
+                  }).join(', ')}</p>
+                )}
+                {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
+                  <p><strong>Quantity:</strong> {formData.quantity} people</p>
+                )}
+                {formData.attendeeNames && <p><strong>Attendees:</strong> {formData.attendeeNames}</p>}
+                {formData.attendeeContacts && (
+                  <p><strong>Attendee Contacts:</strong> {formData.attendeeContacts}</p>
+                )}
+                {formData.vendorTables > 0 && (
+                  <p><strong>Vendor Tables:</strong> {formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''}</p>
+                )}
+                {formData.advertisements.length > 0 && (
+                  <p><strong>Advertisements:</strong> {formData.advertisements.join(', ')}</p>
+                )}
+                {banquetSelected && <p><strong>John O. Williams Memorial Banquet:</strong> Additional banquet-only tickets (+$75 for non-Lectureship guests)</p>}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {formData.registrationType && (
+                <div className="border border-slate-200 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900">Registration Fee</h4>
+                      <p className="text-slate-600">{formData.registrationType}</p>
+                      {!formData.registrationType.includes('group-') && formData.quantity > 1 && formData.registrationType !== 'day-to-day' && (
+                        <p className="text-slate-500 text-sm">{formData.quantity} people × ${getRegistrationPrice() / formData.quantity}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-900">${getRegistrationPrice()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a 
+                      href={paymentLinks[formData.registrationType]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105"
+                    >
+                      💳 Pay with Card
+                    </a>
+                    
+                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                      <div className="text-sm">Zelle to:</div>
+                      <div className="text-xs">cocnl1945@gmail.com</div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                      <div className="text-sm">Mail Check</div>
+                      <div className="text-xs">See details below</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.vendorTables > 0 && (
+                <div className="border border-orange-200 bg-orange-50 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900">Vendor Tables</h4>
+                      <p className="text-slate-600">{formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''}</p>
+                      <p className="text-orange-700 text-sm font-medium mt-1">
+                        ⚠️ Must be paid in advance
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-900">${getVendorTablePrice()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <a 
+                      href={paymentLinks[`vendor-${formData.vendorTables}-table${formData.vendorTables > 1 ? 's' : ''}`]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-3 px-6 rounded-lg text-center transition-all duration-200 transform hover:scale-105"
+                    >
+                      💳 Pay for Tables
+                    </a>
+                    
+                    <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                      <div className="text-sm">Zelle to:</div>
+                      <div className="text-xs">cocnl1945@gmail.com</div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                      <div className="text-sm">Mail Check</div>
+                      <div className="text-xs">See details below</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.advertisements.length > 0 && (
+                <div className="border border-blue-200 bg-blue-50 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900">Souvenir Book Advertisements</h4>
+                      <p className="text-slate-600">{formData.advertisements.length} advertisement{formData.advertisements.length > 1 ? 's' : ''}</p>
+                      <p className="text-blue-700 text-sm font-medium mt-1">
+                        📧 Email ads to: cocnl1945@gmail.com by Feb 1, 2026
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-900">${getAdvertisementPrice()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {formData.advertisements.map((ad, index) => (
+                      <div key={index} className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-slate-700 font-medium">
+                          {ad === 'full-page-color' && 'Full Page Color Ad'}
+                          {ad === 'half-page-color' && 'Half Page Color Ad'}
+                          {ad === 'full-page-bw' && 'Full Page B&W Ad'}
+                          {ad === 'half-page-bw' && 'Half Page B&W Ad'}
+                          {ad === 'quarter-page-bw' && 'Quarter Page B&W Ad'}
+                        </span>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-slate-600 font-bold">
+                            ${ad === 'full-page-color' ? '225' : 
+                              ad === 'half-page-color' ? '175' :
+                              ad === 'full-page-bw' ? '180' :
+                              ad === 'half-page-bw' ? '125' :
+                              ad === 'quarter-page-bw' ? '80' : '0'}
+                          </span>
+                          <a 
+                            href={paymentLinks[ad]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors duration-200"
+                          >
+                            💳 Pay
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                        <div className="text-sm">Zelle to:</div>
+                        <div className="text-xs">cocnl1945@gmail.com</div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold py-3 px-6 rounded-lg text-center">
+                        <div className="text-sm">Mail Check</div>
+                        <div className="text-xs">See details below</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {banquetSelected && (
+                <div className="border border-orange-200 bg-orange-50 rounded-lg p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900">John O. Williams Memorial Banquet</h4>
+                      <p className="text-slate-600">Additional Banquet-Only Tickets • March 12, 2026 • 6:00 PM</p>
+                      <p className="text-orange-700 text-sm font-medium mt-1">
+                        ⚠️ This is for banquet-only guests (not registered for Lectureship)
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-900">$75</p>
+                      <p className="text-slate-600 text-sm">per ticket</p>
+                    </div>
+                  </div>
+                  
+                  <a 
+                    href={paymentLinks['memorial-banquet']}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-3 px-6 rounded-lg inline-block text-center transition-all duration-200 transform hover:scale-105"
+                  >
+                    💳 Pay for Banquet-Only Tickets
+                  </a>
+                </div>
+              )}
+
+              {getTotalPrice() > 0 && (
+                <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-bold">Total Amount Due</h3>
+                    <p className="text-3xl font-bold">${getTotalPrice()}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Payment Instructions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-slate-200 mb-2">Digital Payments</h4>
+                  <ul className="text-slate-300 text-sm space-y-1">
+                    <li>• <strong>Credit Card:</strong> Click "Pay with Card" buttons above</li>
+                    <li>• <strong>Zelle:</strong> Send to cocnl1945@gmail.com</li>
+                    <li>• <strong>Include:</strong> Your name and service type</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-200 mb-2">Mail-In Payment</h4>
+                  <div className="text-slate-300 text-sm">
+                    <p className="mb-2">Make checks payable to:</p>
+                    <div className="bg-white/10 rounded p-2">
+                      <p><strong>Churches of Christ National Lectureship</strong></p>
+                      <p>289 Jonesboro Road, STE #199</p>
+                      <p>McDonough, GA 30253</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center space-x-4">
+              <button 
+                onClick={() => setShowPayment(false)}
+                className="bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition-colors duration-200"
+              >
+                ← Edit Registration
+              </button>
+              <Link 
+                to="/"
+                className="bg-white text-slate-600 font-bold py-3 px-6 rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors duration-200 inline-block"
+              >
+                Return to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <section className="py-12 bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Registration Form</h1>
+          <p className="text-xl text-slate-100">
+            Churches of Christ 80th Annual "Historical" National Lectureship
+          </p>
+          <p className="text-slate-200 mt-2">March 9-13, 2026 • Atlanta, Georgia</p>
+        </div>
+      </section>
+
+      <section className="py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+            
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Contact Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">First Name *</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    required
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Last Name *</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    required
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Street Address *</label>
+                <input
+                  type="text"
+                  name="address"
+                  required
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  placeholder="123 Main Street"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">City *</label>
+                  <input
+                    type="text"
+                    name="city"
+                    required
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="Atlanta"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">State *</label>
+                  <input
+                    type="text"
+                    name="state"
+                    required
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="GA"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">ZIP Code *</label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    required
+                    value={formData.zipCode}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    placeholder="30303"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Registration Type</h3>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
+                  <div>
+                    <h4 className="font-semibold text-blue-800 mb-2">Registration Options</h4>
+                    <p className="text-blue-700 text-sm">
+                      You can register for the full Lectureship, select day-to-day attendance, or attend special events only. 
+                      Registration type is optional if you're only purchasing vendor tables, advertisements, or special event tickets.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <select
+                name="registrationType"
+                value={formData.registrationType}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+              >
+                <option value="">No Lectureship Registration (Special Events/Vendor/Ads Only)</option>
+                <option value="individual-early">Individual Early Bird - $190 (Until Dec 31, 2025)</option>
+                <option value="individual-regular">Individual Regular - $210 (Starting Jan 1, 2026)</option>
+                <option value="georgia-early">Georgia Resident Early Bird - $175 (Until Dec 31, 2025)</option>
+                <option value="georgia-regular">Georgia Resident Regular - $195 (Starting Jan 1, 2026)</option>
+                <option value="group-5-early">Group 5 People Early Bird - $925 (Until Dec 31, 2025)</option>
+                <option value="group-5-regular">Group 5 People Regular - $975 (Starting Jan 1, 2026)</option>
+                <option value="group-10-early">Group 10 People Early Bird - $1,800 (Until Dec 31, 2025)</option>
+                <option value="group-10-regular">Group 10 People Regular - $1,925 (Starting Jan 1, 2026)</option>
+                <option value="day-to-day">Day-to-Day Registration - $75 per day</option>
+              </select>
+            </div>
+
+            {formData.registrationType === 'day-to-day' && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">Select Days to Attend</h3>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <span className="text-yellow-600 text-2xl mr-3 mt-1">📅</span>
+                    <div>
+                      <h4 className="font-semibold text-yellow-800 mb-2">Day-to-Day Registration</h4>
+                      <p className="text-yellow-700 text-sm mb-2">
+                        <strong>$75 per day</strong> - Select which specific days you plan to attend.
+                      </p>
+                      <p className="text-yellow-700 text-sm">
+                        <strong>Note:</strong> No amenities (meals, materials) are provided with day-to-day registration.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="sunday-march-9"
+                      checked={formData.dayToDayDates.includes('sunday-march-9')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Sunday, March 9</span>
+                      <p className="text-slate-600 text-sm">Opening Day</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="monday-march-10"
+                      checked={formData.dayToDayDates.includes('monday-march-10')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Monday, March 10</span>
+                      <p className="text-slate-600 text-sm">Day 2</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="tuesday-march-11"
+                      checked={formData.dayToDayDates.includes('tuesday-march-11')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Tuesday, March 11</span>
+                      <p className="text-slate-600 text-sm">Day 3</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="wednesday-march-12"
+                      checked={formData.dayToDayDates.includes('wednesday-march-12')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Wednesday, March 12</span>
+                      <p className="text-slate-600 text-sm">Day 4 - Memorial Banquet</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="dayToDayDates"
+                      value="thursday-march-13"
+                      checked={formData.dayToDayDates.includes('thursday-march-13')}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                    />
+                    <div className="ml-3">
+                      <span className="text-slate-700 font-medium">Thursday, March 13</span>
+                      <p className="text-slate-600 text-sm">Final Day</p>
+                      <p className="text-slate-500 text-xs">$75</p>
+                    </div>
+                  </label>
+                </div>
+
+                {formData.dayToDayDates.length > 0 && (
+                  <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-700">
+                        Selected: {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''}
+                      </span>
+                      <span className="text-slate-900 font-bold text-lg">
+                        Total: ${formData.dayToDayDates.length * 75}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {formData.dayToDayDates.length === 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700 text-sm">
+                      ⚠️ Please select at least one day to attend for day-to-day registration.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.registrationType && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day' && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">Number of People</h3>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start">
+                    <span className="text-green-600 text-xl mr-3 mt-1">👤</span>
+                    <div>
+                      <h4 className="font-semibold text-green-800 mb-2">Individual Registration</h4>
+                      <p className="text-green-700 text-sm">
+                        How many people are you registering? Each person gets the same registration type.
+                      </p>
+                      <p className="text-green-600 text-xs mt-1">
+                        💡 For 5+ people, select a Group registration above for better rates!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Quantity:
+                  </label>
+                  <select
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  >
+                    {[1,2,3,4].map(num => (
+                      <option key={num} value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
+                    ))}
+                  </select>
+                  <div className="text-slate-600">
+                    × ${formData.registrationType.includes('individual-early') ? '190' : 
+                        formData.registrationType.includes('individual-regular') ? '210' :
+                        formData.registrationType.includes('georgia-early') ? '175' :
+                        formData.registrationType.includes('georgia-regular') ? '195' : '0'} = 
+                    <span className="font-bold text-slate-900 ml-1">${getRegistrationPrice()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {((formData.registrationType.includes('group-5') || formData.registrationType.includes('group-10')) || 
+              (formData.quantity > 1 && !formData.registrationType.includes('group-') && formData.registrationType !== 'day-to-day')) && (
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                  {formData.registrationType.includes('group-') ? 'Group Attendee Names' : 'All Attendee Names'}
+                </h3>
+                <div className={`${formData.registrationType.includes('group-') ? 'bg-blue-50 border-blue-200' : 'bg-purple-50 border-purple-200'} border rounded-lg p-4 mb-4`}>
+                  <div className="flex items-start">
+                    <span className={`${formData.registrationType.includes('group-') ? 'text-blue-600' : 'text-purple-600'} text-xl mr-3 mt-1`}>
+                      {formData.registrationType.includes('group-') ? '👥' : '👤'}
+                    </span>
+                    <div>
+                      <h4 className={`font-semibold ${formData.registrationType.includes('group-') ? 'text-blue-800' : 'text-purple-800'} mb-2`}>
+                        {formData.registrationType.includes('group-') ? 'Group Registration' : 'Multiple Individual Registrations'}
+                      </h4>
+                      <p className={`${formData.registrationType.includes('group-') ? 'text-blue-700' : 'text-purple-700'} text-sm`}>
+                        {formData.registrationType.includes('group-') 
+                          ? `Please list all ${formData.registrationType.includes('group-5') ? '5' : '10'} attendees below, including yourself as the primary contact.`
+                          : `Please list all ${formData.quantity} attendees below, including yourself as the primary contact.`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <label className="block text-slate-700 text-sm font-bold mb-2">
+                  All Attendee Names *
+                </label>
+                <textarea
+                  name="attendeeNames"
+                  value={formData.attendeeNames}
+                  onChange={handleInputChange}
+                  placeholder={formData.registrationType.includes('group-') 
+                    ? `List all ${formData.registrationType.includes('group-5') ? '5' : '10'} attendees, one name per line:\n\n${formData.firstName} ${formData.lastName} (Primary Contact)\nJohn Smith\nMary Johnson\nBob Wilson\nSarah Davis${formData.registrationType.includes('group-10') ? `\nMike Brown\nLisa Taylor\nDavid Lee\nEmma White\nChris Garcia` : ''}`
+                    : `List all ${formData.quantity} attendees, one name per line:\n\n${formData.firstName} ${formData.lastName} (Primary Contact)${formData.quantity > 1 ? `\n${Array.from({length: formData.quantity - 1}, (_, i) => `Person ${i + 2} Name`).join('\n')}` : ''}`
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-500 h-32"
+                  required
+                />
+                <p className="text-xs text-slate-600 mt-1">
+                  {formData.registrationType.includes('group-') 
+                    ? `Please include yourself as the first name, then list the remaining ${formData.registrationType.includes('group-5') ? '4' : '9'} attendees`
+                    : `Please include yourself as the first name, then list the remaining ${formData.quantity - 1} attendee${formData.quantity > 2 ? 's' : ''}`
+                  }
+                </p>
+
+                <div className="mt-6">
+                  <label className="block text-slate-700 text-sm font-bold mb-2">
+                    Attendee Contact Information
+                  </label>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                    <p className="text-yellow-800 text-sm">
+                      📞 Please provide phone numbers and email addresses for all attendees (except yourself - we already have yours above)
+                    </p>
+                  </div>
+                  <textarea
+                    name="attendeeContacts"
+                    value={formData.attendeeContacts}
+                    onChange={handleInputChange}
+                    placeholder={formData.registrationType.includes('group-') 
+                      ? `Provide contact info for the other ${formData.registrationType.includes('group-5') ? '4' : '9'} attendees:\n\nJohn Smith - (555) 123-4567 - john@email.com\nMary Johnson - (555) 234-5678 - mary@email.com\nBob Wilson - (555) 345-6789 - bob@email.com\nSarah Davis - (555) 456-7890 - sarah@email.com${formData.registrationType.includes('group-10') ? `\nMike Brown - (555) 567-8901 - mike@email.com\nLisa Taylor - (555) 678-9012 - lisa@email.com\nDavid Lee - (555) 789-0123 - david@email.com\nEmma White - (555) 890-1234 - emma@email.com\nChris Garcia - (555) 901-2345 - chris@email.com` : ''}`
+                      : formData.quantity > 1 ? `Provide contact info for the other ${formData.quantity - 1} attendee${formData.quantity > 2 ? 's' : ''}:\n\n${Array.from({length: formData.quantity - 1}, (_, i) => `Person ${i + 2} - (555) 123-456${i + 2} - person${i + 2}@email.com`).join('\n')}` : 'No additional contact info needed for single registration'
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-500 h-32"
+                    required={formData.quantity > 1 || formData.registrationType.includes('group-')}
+                  />
+                  <p className="text-xs text-slate-600 mt-1">
+                    Format: Name - Phone - Email (one person per line)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Special Events</h3>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <span className="text-green-600 text-2xl mr-3 mt-1">🎉</span>
+                  <div>
+                    <h4 className="font-semibold text-green-800 mb-2">Memorial Banquet Information</h4>
+                    <p className="text-green-700 text-sm mb-2">
+                      <strong>If you registered for the full Lectureship above:</strong> Your banquet ticket is already included!
+                    </p>
+                    <p className="text-green-700 text-sm">
+                      <strong>The $75 option below is for:</strong> People who want to attend ONLY the banquet 
+                      (not registering for the full Lectureship) or want to bring additional guests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="specialEvents"
+                    value="memorial-banquet"
+                    checked={formData.specialEvents.includes('memorial-banquet')}
+                    onChange={handleInputChange}
+                    className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
+                  />
+                  <div className="ml-3">
+                    <span className="text-slate-700 font-medium">John O. Williams Memorial Banquet</span>
+                    <p className="text-slate-600 text-sm font-medium">March 12, 2026 • 6:00 PM • $75 per ticket</p>
+                    <p className="text-slate-500 text-xs mt-1">
+                      For banquet-only guests or additional tickets for family/friends
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">🏪 Vendor Tables</h3>
+              
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <span className="text-orange-600 text-2xl mr-3 mt-1">⚠️</span>
+                  <div>
+                    <h4 className="font-semibold text-orange-800 mb-2">Vendor Requirements</h4>
+                    <p className="text-orange-700 text-sm mb-2">
+                      <strong>All vendors MUST register</strong> for the Lectureship in addition to purchasing vendor tables (for insurance purposes).
+                    </p>
+                    <p className="text-orange-700 text-sm">
+                      Vendor table cost must be paid in advance. Space allocated on first-come basis.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="border border-slate-200 rounded-lg p-4 text-center">
+                  <h4 className="font-semibold text-slate-900 mb-2">1 Table</h4>
+                  <p className="text-2xl font-bold text-slate-600 mb-2">$250</p>
+                  <label className="flex items-center justify-center">
+                    <input
+                      type="radio"
+                      name="vendorTables"
+                      value="1"
+                      checked={formData.vendorTables === 1}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    Select
+                  </label>
+                </div>
+                
+                <div className="border border-slate-200 rounded-lg p-4 text-center">
+                  <h4 className="font-semibold text-slate-900 mb-2">2 Tables</h4>
+                  <p className="text-2xl font-bold text-slate-600 mb-2">$350</p>
+                  <label className="flex items-center justify-center">
+                    <input
+                      type="radio"
+                      name="vendorTables"
+                      value="2"
+                      checked={formData.vendorTables === 2}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    Select
+                  </label>
+                </div>
+                
+                <div className="border border-slate-200 rounded-lg p-4 text-center">
+                  <h4 className="font-semibold text-slate-900 mb-2">3 Tables</h4>
+                  <p className="text-2xl font-bold text-slate-600 mb-2">$450</p>
+                  <label className="flex items-center justify-center">
+                    <input
+                      type="radio"
+                      name="vendorTables"
+                      value="3"
+                      checked={formData.vendorTables === 3}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    Select
+                  </label>
+                </div>
+              </div>
+
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="vendorTables"
+                  value="0"
+                  checked={formData.vendorTables === 0}
+                  onChange={handleInputChange}
+                  className="mr-2"
+                />
+                <span className="text-slate-700">No vendor tables needed</span>
+              </label>
+            </div>
+
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">📧 Souvenir Book Advertisements</h3>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start">
+                  <span className="text-red-600 text-2xl mr-3 mt-1">📅</span>
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-2">Advertisement Deadline</h4>
+                    <p className="text-red-700 text-sm mb-2">
+                      <strong>All ads MUST BE RECEIVED by February 1, 2026</strong>
+                    </p>
+                    <p className="text-red-700 text-sm">
+                      Email camera-ready ads to: <strong>cocnl1945@gmail.com</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-4">Color Advertisements</h4>
+                  <div className="space-y-3">
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        name="advertisements"
+                        value="full-page-color"
+                        checked={formData.advertisements.includes('full-page-color')}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-slate-700 font-medium">Full Page Digital Color Ad</span>
+                        <p className="text-blue-600 font-bold">$225.00</p>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        name="advertisements"
+                        value="half-page-color"
+                        checked={formData.advertisements.includes('half-page-color')}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-slate-700 font-medium">Half Page Digital Color Ad</span>
+                        <p className="text-blue-600 font-bold">$175.00</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Black & White Advertisements</h4>
+                  <div className="space-y-3">
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        name="advertisements"
+                        value="full-page-bw"
+                        checked={formData.advertisements.includes('full-page-bw')}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-slate-700 font-medium">Full Page Digital B/W Ad</span>
+                        <p className="text-gray-600 font-bold">$180.00</p>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        name="advertisements"
+                        value="half-page-bw"
+                        checked={formData.advertisements.includes('half-page-bw')}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-slate-700 font-medium">Half Page Digital B/W Ad</span>
+                        <p className="text-gray-600 font-bold">$125.00</p>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        name="advertisements"
+                        value="quarter-page-bw"
+                        checked={formData.advertisements.includes('quarter-page-bw')}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-gray-600 focus:ring-gray-500 border-slate-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-slate-700 font-medium">Quarter Page Digital B/W Ad</span>
+                        <p className="text-gray-600 font-bold">$80.00</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {(formData.registrationType || formData.vendorTables > 0 || formData.advertisements.length > 0 || formData.specialEvents.length > 0) && (
+              <div className="mb-8">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-4">💰 Price Summary</h3>
+                  <div className="space-y-2 text-slate-700">
+                    {formData.registrationType && (
+                      <div className="flex justify-between">
+                        <span>
+                          Registration ({formData.registrationType})
+                          {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                            <span className="text-sm text-slate-500 block">
+                              {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''} × $75
+                            </span>
+                          )}
+                        </span>
+                        <span className="font-bold">${getRegistrationPrice()}</span>
+                      </div>
+                    )}
+                    {formData.vendorTables > 0 && (
+                      <div className="flex justify-between">
+                        <span>Vendor Tables ({formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''})</span>
+                        <span className="font-bold">${getVendorTablePrice()}</span>
+                      </div>
+                    )}
+                    {formData.advertisements.length > 0 && (
+                      <div className="flex justify-between">
+                        <span>Advertisements ({formData.advertisements.length} ad{formData.advertisements.length > 1 ? 's' : ''})</span>
+                        <span className="font-bold">${getAdvertisementPrice()}</span>
+                      </div>
+                    )}
+                    {formData.specialEvents.includes('memorial-banquet') && (
+                      <div className="flex justify-between">
+                        <span>Memorial Banquet Tickets</span>
+                        <span className="font-bold">$75</span>
+                      </div>
+                    )}
+                    {getTotalPrice() > 0 && (
+                      <div className="border-t border-slate-300 pt-2 mt-4">
+                        <div className="flex justify-between text-lg font-bold text-slate-900">
+                          <span>Total</span>
+                          <span>${getTotalPrice()}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Additional Notes
+              </label>
+              <textarea
+                name="additionalNotes"
+                value={formData.additionalNotes}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                placeholder="Any special accommodations or additional information..."
+              />
+            </div>
+
+            <div className="text-center">
+              {submitError && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 font-medium">❌ {submitError}</p>
+                  <p className="text-red-600 text-sm mt-1">Please try again or contact us at (800) 609-6211</p>
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`${
+                  isSubmitting 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 transform hover:scale-105'
+                } text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all duration-200 text-lg`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⏳</span>
+                    Submitting Registration...
+                  </>
+                ) : (
+                  'Continue to Payment'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default RegisterForm;
