@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
+import { sendRegistrationEmail } from '../utils/backupEmail';
 
 // Registration data interface for localStorage
 interface RegistrationData {
@@ -238,15 +239,29 @@ const RegisterForm = () => {
         console.log('Internal notification email sent successfully:', internalEmailResult);
         
       } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
-        console.error('Email error details:', {
-          error: emailError,
-          message: emailError.message,
-          status: emailError.status,
-          text: emailError.text
-        });
-        // Don't fail the registration if email fails - just log it
-        alert('Registration saved successfully, but there was an issue sending the confirmation email. Please contact us at cocnl1945@gmail.com to confirm your registration.');
+        console.error('EmailJS failed, trying backup email system:', emailError);
+        
+        // Try backup email system
+        try {
+          const backupResult = await sendRegistrationEmail({
+            ...registrationData,
+            paymentMethod: formData.paymentMethod
+          });
+          
+          if (backupResult.success) {
+            console.log('Backup email sent successfully');
+          } else {
+            throw new Error('Backup email also failed');
+          }
+        } catch (backupError) {
+          console.error('Both email systems failed:', backupError);
+          
+          // Just log the failure - don't bother the user with mailto
+          console.log('Registration saved to localStorage but emails failed to send');
+          
+          // Optionally show a subtle message to the user
+          alert('Registration saved successfully! However, there was an issue sending the confirmation email. Please contact us at cocnl1945@gmail.com or (800) 609-6211 to confirm your registration was received.');
+        }
       }
       
       setShowPayment(true);
@@ -358,9 +373,9 @@ const RegisterForm = () => {
               <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-white text-3xl">✓</span>
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">Complete Your Payment</h2>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">Registration Submitted!</h2>
               <p className="text-slate-600">
-                Thank you {formData.firstName}! Please complete your payment below.
+                Thank you {formData.firstName}! Your registration has been received.
               </p>
             </div>
 
@@ -370,8 +385,10 @@ const RegisterForm = () => {
                 <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
                 <p><strong>Email:</strong> {formData.email}</p>
                 <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
+                <p><strong>Total Amount:</strong> ${getTotalPrice()}</p>
+                <p><strong>Registration ID:</strong> {`reg_${Date.now().toString().slice(-8)}`}</p>
                 {formData.paymentMethod && (
-                  <p><strong>Preferred Payment Method:</strong> {
+                  <p><strong>Payment Method:</strong> {
                     formData.paymentMethod === 'credit-card' ? '💳 Credit/Debit Card' :
                     formData.paymentMethod === 'zelle' ? '📱 Zelle' :
                     formData.paymentMethod === 'check' ? '✉️ Mail Check' : formData.paymentMethod
@@ -380,7 +397,96 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            <div className="mt-8 text-center space-x-4">
+            {/* Payment Instructions based on selected method */}
+            {getTotalPrice() > 0 && (
+              <div className="mb-8">
+                {formData.paymentMethod === 'credit-card' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-blue-900 mb-4">💳 Complete Your Online Payment</h3>
+                    <p className="text-blue-700 mb-4">
+                      Click the button below to pay securely with your credit or debit card through Square.
+                    </p>
+                    <a
+                      href="https://square.link/u/ieidynuy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 inline-block"
+                    >
+                      Pay ${getTotalPrice()} with Square →
+                    </a>
+                  </div>
+                )}
+
+                {formData.paymentMethod === 'zelle' && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-purple-900 mb-4">📱 Pay with Zelle</h3>
+                    <div className="space-y-3 text-purple-700">
+                      <p><strong>Send payment to:</strong> cocnl1945@gmail.com</p>
+                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p><strong>Memo:</strong> {formData.firstName} {formData.lastName} - Lectureship Registration</p>
+                    </div>
+                    <div className="mt-4 p-3 bg-purple-100 rounded-lg">
+                      <p className="text-purple-800 text-sm">
+                        💡 <strong>Important:</strong> Please include your name and "Lectureship Registration" in the Zelle memo so we can match your payment to your registration.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {formData.paymentMethod === 'check' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-green-900 mb-4">✉️ Mail Your Check</h3>
+                    <div className="space-y-3 text-green-700">
+                      <p><strong>Make check payable to:</strong> Churches of Christ National Lectureship</p>
+                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p><strong>Mail to:</strong></p>
+                      <div className="ml-4 bg-green-100 p-3 rounded">
+                        <p>Churches of Christ National Lectureship</p>
+                        <p>289 Jonesboro Road, STE #199</p>
+                        <p>McDonough, GA 30253</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-green-100 rounded-lg">
+                      <p className="text-green-800 text-sm">
+                        💡 <strong>Important:</strong> Please write your name and registration ID on the memo line of your check.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!formData.paymentMethod && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">💰 Payment Required</h3>
+                    <p className="text-gray-700 mb-4">
+                      Please contact us at <strong>cocnl1945@gmail.com</strong> or <strong>(800) 609-6211</strong> to arrange payment.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Free registration message */}
+            {getTotalPrice() === 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+                <h3 className="text-xl font-bold text-green-900 mb-2">🎉 Registration Complete!</h3>
+                <p className="text-green-700">
+                  No payment is required for your registration. We'll see you at the event!
+                </p>
+              </div>
+            )}
+
+            {/* Next Steps */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+              <h3 className="text-xl font-bold text-yellow-900 mb-4">📋 Next Steps</h3>
+              <ul className="space-y-2 text-yellow-800">
+                <li>• You should receive a confirmation email shortly</li>
+                <li>• We will confirm your registration once payment is received</li>
+                <li>• Contact us at cocnl1945@gmail.com with any questions</li>
+                <li>• Visit our website for updates: www.cocnl1945.org</li>
+              </ul>
+            </div>
+
+            <div className="text-center space-x-4">
               <button 
                 onClick={() => setShowPayment(false)}
                 className="bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition-colors duration-200"
