@@ -187,7 +187,10 @@ const RegisterForm = () => {
             from_name: 'Churches of Christ National Lectureship',
             registration_type: formData.registrationType || 'Special Events Only',
             total_amount: getTotalPrice(),
-            payment_method: paymentMethodDisplay,
+            payment_method: formData.paymentMethod ? 
+              (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
+               formData.paymentMethod === 'zelle' ? 'Zelle' :
+               formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
             attendee_names: formData.attendeeNames || 'N/A',
             attendee_contacts: formData.attendeeContacts || 'N/A',
             vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
@@ -213,7 +216,10 @@ const RegisterForm = () => {
             from_name: 'Website Registration System',
             registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName}`,
             total_amount: getTotalPrice(),
-            payment_method: `PAYMENT METHOD: ${paymentMethodDisplay}`,
+            payment_method: formData.paymentMethod ? 
+              (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
+               formData.paymentMethod === 'zelle' ? 'Zelle' :
+               formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
             attendee_names: formData.attendeeNames || 'N/A',
             attendee_contacts: formData.attendeeContacts || 'N/A',
             vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
@@ -294,9 +300,6 @@ const RegisterForm = () => {
     let total = 0;
     if (formData.specialEvents.includes('memorial-banquet')) {
       total += 75;
-    }
-    if (formData.specialEvents.includes('womens-luncheon')) {
-      total += 60;
     }
     return total;
   };
@@ -833,24 +836,6 @@ const RegisterForm = () => {
                     </p>
                   </div>
                 </label>
-
-                <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="specialEvents"
-                    value="womens-luncheon"
-                    checked={formData.specialEvents.includes('womens-luncheon')}
-                    onChange={handleInputChange}
-                    className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300 rounded"
-                  />
-                  <div className="ml-3">
-                    <span className="text-slate-700 font-medium">Women's Division Luncheon</span>
-                    <p className="text-slate-600 text-sm font-medium">March 11, 2026 • 12:00 PM • $60 per ticket</p>
-                    <p className="text-slate-500 text-xs mt-1">
-                      On-site purchase only - check here if interested
-                    </p>
-                  </div>
-                </label>
               </div>
             </div>
 
@@ -1048,22 +1033,21 @@ const RegisterForm = () => {
             {/* Payment Method Selection - ALWAYS SHOW IF THERE'S A TOTAL */}
             {getTotalPrice() > 0 && (
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">💳 How will you pay?</h3>
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">💳 Payment Method</h3>
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <div className="flex items-start">
                     <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
                     <div>
-                      <h4 className="font-semibold text-blue-800 mb-2">Payment Method Selection</h4>
+                      <h4 className="font-semibold text-blue-800 mb-2">How will you pay?</h4>
                       <p className="text-blue-700 text-sm">
-                        Please let us know how you plan to pay so we can track your registration properly. 
-                        You'll receive payment instructions after submitting this form.
+                        Please let us know your preferred payment method. This helps us track payments more efficiently.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-4">
                   <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                     <input
                       type="radio"
@@ -1071,12 +1055,11 @@ const RegisterForm = () => {
                       value="credit-card"
                       checked={formData.paymentMethod === 'credit-card'}
                       onChange={handleInputChange}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300"
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300"
                     />
                     <div className="ml-3">
-                      <span className="text-slate-700 font-medium">💳 Credit/Debit Card</span>
-                      <p className="text-slate-600 text-sm">Pay online with Square</p>
-                      <p className="text-green-600 text-xs font-medium">✓ Instant processing</p>
+                      <span className="text-slate-700 font-medium">💳 Credit Card (Square)</span>
+                      <p className="text-slate-600 text-sm">Pay online using our secure Square payment links</p>
                     </div>
                   </label>
 
@@ -1087,12 +1070,12 @@ const RegisterForm = () => {
                       value="zelle"
                       checked={formData.paymentMethod === 'zelle'}
                       onChange={handleInputChange}
-                      className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-slate-300"
+                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300"
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">📱 Zelle</span>
-                      <p className="text-slate-600 text-sm">Send to: cocnl1945@gmail.com</p>
-                      <p className="text-green-600 text-xs font-medium">✓ No fees</p>
+                      <p className="text-slate-600 text-sm">Send payment to: cocnl1945@gmail.com</p>
+                      <p className="text-slate-500 text-xs mt-1">Include your name and "Lectureship Registration" in the memo</p>
                     </div>
                   </label>
 
@@ -1107,71 +1090,57 @@ const RegisterForm = () => {
                     />
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">✉️ Mail Check</span>
-                      <p className="text-slate-600 text-sm">Traditional payment</p>
-                      <p className="text-orange-600 text-xs font-medium">⏰ Allow extra time</p>
+                      <p className="text-slate-600 text-sm">Mail to: Churches of Christ National Lectureship</p>
+                      <p className="text-slate-500 text-xs mt-1">289 Jonesboro Road, STE #199, McDonough, GA 30253</p>
                     </div>
                   </label>
                 </div>
+              </div>
+            )}
 
-                {formData.paymentMethod === '' && getTotalPrice() > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-700 text-sm">
-                      ⚠️ Please select how you plan to pay so we can provide the correct instructions.
-                    </p>
+            {/* Price Summary */}
+            <div className="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-6">
+              <h4 className="text-lg font-bold text-slate-900 mb-4">💰 Total Amount</h4>
+              <div className="space-y-2 text-slate-700">
+                {formData.registrationType && (
+                  <div className="flex justify-between">
+                    <span>
+                      Registration ({formData.registrationType})
+                      {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
+                        <span className="text-sm text-slate-500 block">
+                          {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''} × $75
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-bold">${getRegistrationPrice()}</span>
                   </div>
                 )}
-
-                {/* Price Summary */}
-                <div className="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-6">
-                  <h4 className="text-lg font-bold text-slate-900 mb-4">💰 Total Amount</h4>
-                  <div className="space-y-2 text-slate-700">
-                    {formData.registrationType && (
-                      <div className="flex justify-between">
-                        <span>
-                          Registration ({formData.registrationType})
-                          {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
-                            <span className="text-sm text-slate-500 block">
-                              {formData.dayToDayDates.length} day{formData.dayToDayDates.length > 1 ? 's' : ''} × $75
-                            </span>
-                          )}
-                        </span>
-                        <span className="font-bold">${getRegistrationPrice()}</span>
-                      </div>
-                    )}
-                    {formData.vendorTables > 0 && (
-                      <div className="flex justify-between">
-                        <span>Vendor Tables ({formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''})</span>
-                        <span className="font-bold">${getVendorTablePrice()}</span>
-                      </div>
-                    )}
-                    {formData.advertisements.length > 0 && (
-                      <div className="flex justify-between">
-                        <span>Advertisements ({formData.advertisements.length} ad{formData.advertisements.length > 1 ? 's' : ''})</span>
-                        <span className="font-bold">${getAdvertisementPrice()}</span>
-                      </div>
-                    )}
-                    {formData.specialEvents.includes('memorial-banquet') && (
-                      <div className="flex justify-between">
-                        <span>Memorial Banquet</span>
-                        <span className="font-bold">$75</span>
-                      </div>
-                    )}
-                    {formData.specialEvents.includes('womens-luncheon') && (
-                      <div className="flex justify-between">
-                        <span>Women's Division Luncheon</span>
-                        <span className="font-bold">$60</span>
-                      </div>
-                    )}
-                    <div className="border-t border-slate-300 pt-2 mt-4">
-                      <div className="flex justify-between text-xl font-bold text-slate-900">
-                        <span>Total</span>
-                        <span>${getTotalPrice()}</span>
-                      </div>
-                    </div>
+                {formData.vendorTables > 0 && (
+                  <div className="flex justify-between">
+                    <span>Vendor Tables ({formData.vendorTables} table{formData.vendorTables > 1 ? 's' : ''})</span>
+                    <span className="font-bold">${getVendorTablePrice()}</span>
+                  </div>
+                )}
+                {formData.advertisements.length > 0 && (
+                  <div className="flex justify-between">
+                    <span>Advertisements ({formData.advertisements.length} ad{formData.advertisements.length > 1 ? 's' : ''})</span>
+                    <span className="font-bold">${getAdvertisementPrice()}</span>
+                  </div>
+                )}
+                {formData.specialEvents.includes('memorial-banquet') && (
+                  <div className="flex justify-between">
+                    <span>Memorial Banquet Tickets</span>
+                    <span className="font-bold">$75</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-300 pt-2 mt-4">
+                  <div className="flex justify-between text-xl font-bold text-slate-900">
+                    <span>Total</span>
+                    <span>${getTotalPrice()}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
           </form>
         </div>
