@@ -4,9 +4,20 @@ import { useState, useEffect, useRef } from "react";
 function Home() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const [showMobileButton, setShowMobileButton] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const playerRef = useRef<any>(null);
 
   useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      setIsMobile(mobile);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     // Load YouTube IFrame API
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
@@ -34,11 +45,29 @@ function Home() {
           onReady: (event: any) => {
             event.target.setVolume(30); // Set to 30% volume
             setShowControls(true);
+            
+            // Try to play, if it fails on mobile, show the mobile button
+            if (isMobile) {
+              // On mobile, autoplay likely won't work, so show the button
+              setShowMobileButton(true);
+              setIsPlaying(false);
+            }
           },
           onStateChange: (event: any) => {
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
               setIsPlaying(true);
+              setShowMobileButton(false); // Hide mobile button when playing
             } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+              if (isMobile) {
+                setShowMobileButton(true); // Show mobile button when paused on mobile
+              }
+            }
+          },
+          onError: () => {
+            // If there's an error, show mobile button on mobile devices
+            if (isMobile) {
+              setShowMobileButton(true);
               setIsPlaying(false);
             }
           }
@@ -51,8 +80,9 @@ function Home() {
       if (playerRef.current && playerRef.current.destroy) {
         playerRef.current.destroy();
       }
+      window.removeEventListener('resize', checkMobile);
     };
-  }, []);
+  }, [isMobile]);
 
   const toggleMusic = () => {
     if (playerRef.current) {
@@ -64,13 +94,34 @@ function Home() {
     }
   };
 
+  const handleMobilePlay = () => {
+    if (playerRef.current) {
+      playerRef.current.playVideo();
+      setShowMobileButton(false);
+    }
+  };
+
   return (
     <div className="bg-white">
       {/* Hidden YouTube Player for Audio */}
       <div id="youtube-audio-player" style={{ display: 'none' }}></div>
       
-      {/* Music Control Button */}
-      {showControls && (
+      {/* Mobile Play Music Button - Shows prominently on mobile when music isn't playing */}
+      {showMobileButton && isMobile && (
+        <div className="fixed top-4 right-4 z-50">
+          <button
+            onClick={handleMobilePlay}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+            title="Play Background Music"
+          >
+            <span className="text-xl">🎵</span>
+            <span className="text-sm font-medium">Play Music</span>
+          </button>
+        </div>
+      )}
+      
+      {/* Desktop/Regular Music Control Button */}
+      {showControls && !showMobileButton && (
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={toggleMusic}
