@@ -1,28 +1,5 @@
 import React, { useState } from 'react';
-
-export interface RegistrationData {
-  id: string;
-  timestamp: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  registrationType: string;
-  quantity: number;
-  attendeeNames: string;
-  attendeeContacts: string;
-  specialEvents: string[];
-  vendorTables: number;
-  advertisements: string[];
-  dayToDayDates: string[];
-  additionalNotes: string;
-  totalAmount: number;
-  paymentStatus: 'pending' | 'paid' | 'partial' | 'refunded';
-}
+import { RegistrationData } from '../utils/csvExport';
 
 interface RegistrationTableProps {
   registrations: RegistrationData[];
