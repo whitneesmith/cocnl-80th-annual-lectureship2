@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+  import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 
@@ -1140,6 +1140,50 @@ const RegisterForm = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Additional Notes */}
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Additional Notes
+              </label>
+              <textarea
+                name="additionalNotes"
+                value={formData.additionalNotes}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                placeholder="Any special accommodations or additional information..."
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="text-center">
+              {submitError && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 font-medium">❌ {submitError}</p>
+                  <p className="text-red-600 text-sm mt-1">Please try again or contact us at (800) 609-6211</p>
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`${
+                  isSubmitting 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 transform hover:scale-105'
+                } text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all duration-200 text-lg`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⏳</span>
+                    Submitting Registration...
+                  </>
+                ) : (
+                  'Continue to Payment'
+                )}
+              </button>
             </div>
 
           </form>
