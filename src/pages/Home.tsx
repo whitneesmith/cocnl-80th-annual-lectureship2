@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
 function Home() {
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false); // Start as false until we confirm it's playing
   const [showControls, setShowControls] = useState(false);
   const [showMobileButton, setShowMobileButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -46,15 +46,8 @@ function Home() {
             event.target.setVolume(30); // Set to 30% volume
             setShowControls(true);
             
-            // Only show mobile button on mobile devices when autoplay fails
-            // Don't interfere with desktop autoplay
-            if (isMobile) {
-              setShowMobileButton(true);
-              setIsPlaying(false);
-            } else {
-              // On desktop, let autoplay work normally
-              setIsPlaying(true);
-            }
+            // Try to play the video immediately
+            event.target.playVideo();
           },
           onStateChange: (event: any) => {
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
@@ -64,6 +57,12 @@ function Home() {
               setIsPlaying(false);
               if (isMobile) {
                 setShowMobileButton(true); // Show mobile button when paused on mobile
+              }
+            } else if (event.data === (window as any).YT.PlayerState.UNSTARTED) {
+              // Video hasn't started - likely autoplay was blocked
+              setIsPlaying(false);
+              if (isMobile) {
+                setShowMobileButton(true);
               }
             }
           },
