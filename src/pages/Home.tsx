@@ -46,11 +46,14 @@ function Home() {
             event.target.setVolume(30); // Set to 30% volume
             setShowControls(true);
             
-            // Try to play, if it fails on mobile, show the mobile button
+            // Only show mobile button on mobile devices when autoplay fails
+            // Don't interfere with desktop autoplay
             if (isMobile) {
-              // On mobile, autoplay likely won't work, so show the button
               setShowMobileButton(true);
               setIsPlaying(false);
+            } else {
+              // On desktop, let autoplay work normally
+              setIsPlaying(true);
             }
           },
           onStateChange: (event: any) => {
@@ -65,7 +68,7 @@ function Home() {
             }
           },
           onError: () => {
-            // If there's an error, show mobile button on mobile devices
+            // If there's an error, show mobile button on mobile devices only
             if (isMobile) {
               setShowMobileButton(true);
               setIsPlaying(false);
