@@ -141,19 +141,19 @@ function Home() {
         </div>
       )}
       
-      {/* Desktop/Regular Music Control Button */}
+      {/* Desktop/Regular Music Control Button - Bottom right, more prominent */}
       {showControls && !showMobileButton && (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={toggleMusic}
-            className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 flex items-center space-x-2"
-            title={isPlaying ? "Pause Music" : "Play Music"}
+            className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white px-6 py-4 rounded-full shadow-xl transition-all duration-200 flex items-center space-x-3 transform hover:scale-105 border-2 border-slate-600"
+            title={isPlaying ? "Pause Background Music" : "Play Background Music"}
           >
-            <span className="text-xl">
-              {isPlaying ? "🔊" : "🔇"}
+            <span className="text-2xl">
+              {isPlaying ? "🔊" : "🎵"}
             </span>
-            <span className="text-sm font-medium hidden sm:block">
-              {isPlaying ? "Pause" : "Play"}
+            <span className="text-sm font-semibold">
+              {isPlaying ? "Pause Music" : "Play Music"}
             </span>
           </button>
         </div>
