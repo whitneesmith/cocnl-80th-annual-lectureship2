@@ -46,28 +46,47 @@ function Home() {
             event.target.setVolume(30); // Set to 30% volume
             setShowControls(true);
             
-            // Try to play the video immediately
-            event.target.playVideo();
+            // Try to play the video immediately and handle the promise
+            const playPromise = event.target.playVideo();
+            
+            // Check if it's actually playing after a short delay
+            setTimeout(() => {
+              const playerState = event.target.getPlayerState();
+              if (playerState === (window as any).YT.PlayerState.PLAYING) {
+                setIsPlaying(true);
+                setShowMobileButton(false);
+              } else {
+                // Autoplay was likely blocked
+                setIsPlaying(false);
+                if (isMobile) {
+                  setShowMobileButton(true);
+                }
+              }
+            }, 1000);
           },
           onStateChange: (event: any) => {
+            console.log('YouTube player state changed:', event.data); // Debug log
+            
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
+              console.log('Music is now playing'); // Debug log
               setIsPlaying(true);
-              setShowMobileButton(false); // Hide mobile button when playing
+              setShowMobileButton(false);
             } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
+              console.log('Music is now paused'); // Debug log
               setIsPlaying(false);
               if (isMobile) {
-                setShowMobileButton(true); // Show mobile button when paused on mobile
+                setShowMobileButton(true);
               }
             } else if (event.data === (window as any).YT.PlayerState.UNSTARTED) {
-              // Video hasn't started - likely autoplay was blocked
+              console.log('Music unstarted - autoplay likely blocked'); // Debug log
               setIsPlaying(false);
               if (isMobile) {
                 setShowMobileButton(true);
               }
             }
           },
-          onError: () => {
-            // If there's an error, show mobile button on mobile devices only
+          onError: (event: any) => {
+            console.log('YouTube player error:', event.data); // Debug log
             if (isMobile) {
               setShowMobileButton(true);
               setIsPlaying(false);
