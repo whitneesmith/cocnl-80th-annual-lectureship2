@@ -1,7 +1,7 @@
-              import React, { useState, useEffect } from 'react';
+                    import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
-import { sendRegistrationEmail } from '../utils/backupEmail';
+import { saveRegistrationCentrally } from '../utils/registrationStorage';
 
 // Registration data interface for localStorage
 interface RegistrationData {
@@ -173,91 +173,99 @@ const RegisterForm = () => {
         paymentStatus: 'pending'
       };
 
+      // Save to multiple storage locations for reliability
+      console.log('Saving registration to multiple storage systems...');
+      
+      // 1. Save to localStorage (immediate backup)
       const existingRegistrations = JSON.parse(localStorage.getItem('lectureship_registrations') || '[]');
       const updatedRegistrations = [registrationData, ...existingRegistrations];
       localStorage.setItem('lectureship_registrations', JSON.stringify(updatedRegistrations));
-
-      console.log('Registration saved to localStorage:', registrationData);
       
-      // Send confirmation email immediately when registration is submitted
+      // 2. Save to central storage system (accessible from admin dashboard)
+      const centralStorageSuccess = await saveRegistrationCentrally(registrationData);
+      
+      if (centralStorageSuccess) {
+        console.log('Registration saved to central storage successfully');
+      } else {
+        console.warn('Central storage failed, but localStorage backup exists');
+      }
+      
+      // 3. Try to send notification email (if available)
       try {
-        console.log('Attempting to send confirmation email...');
-        
-        // Simplified email data to match template exactly
-        const emailData = {
-          to_name: `${formData.firstName} ${formData.lastName}`,
-          to_email: formData.email,
-          user_email: formData.email, // Add this as backup
-          email: formData.email, // Add this as backup
-          registration_type: formData.registrationType || 'Special Events Only',
-          total_amount: getTotalPrice()
-        };
-        
-        console.log('Email data being sent:', emailData);
-        console.log('User email:', formData.email);
-        
-        const emailResult = await emailjs.send(
-          'service_p49aqfy',
-          'template_oywsajv',
-          emailData,
-          'Nttdl3naYDqz18xNa'
-        );
-        console.log('Confirmation email sent successfully:', emailResult);
-        
-        // Send simpler admin notification
-        const adminEmailData = {
-          to_name: 'Admin',
-          to_email: 'cocnl1945@gmail.com',
-          user_email: 'cocnl1945@gmail.com', // Add backup
-          email: 'cocnl1945@gmail.com', // Add backup
-          registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName} - ${formData.registrationType || 'Special Events Only'}`,
-          total_amount: getTotalPrice()
-        };
-        
+        console.log('Attempting to send notification email...');
         await emailjs.send(
           'service_p49aqfy',
           'template_oywsajv',
-          adminEmailData,
-          'Nttdl3naYDqz18xNa'
-        );
-        console.log('Admin notification sent successfully');
-        
-      } catch (emailError) {
-        console.error('EmailJS failed with detailed error:', emailError);
-        console.error('Error message:', emailError?.message);
-        console.error('Error status:', emailError?.status);
-        console.error('Error text:', emailError?.text);
-        
-        // Try backup email system
-        try {
-          const backupResult = await sendRegistrationEmail({
-            ...registrationData,
-            paymentMethod: formData.paymentMethod
-          });
-          
-          if (backupResult.success) {
-            console.log('Backup email sent successfully');
-          } else {
-            throw new Error('Backup email also failed');
+          {
+            to_name: 'Registration System',
+            to_email: 'cocnl1945@gmail.com',
+            from_name: 'Website Registration',
+            registration_type: `NEW REGISTRATION: ${formData.firstName} ${formData.lastName}`,
+            total_amount: getTotalPrice(),
+            payment_method: formData.paymentMethod || 'Not specified',
+            attendee_names: formData.attendeeNames || 'N/A',
+            attendee_contacts: formData.attendeeContacts || 'N/A',
+            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s)` : 'None',
+            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') : 'None',
+            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
+            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
+            phone: formData.phone,
+            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+            additional_notes: `Registration ID: ${registrationData.id}\n\nFull Data: ${JSON.stringify(registrationData, null, 2)}`,
+            quantity: formData.quantity,
+            registration_id: registrationData.id
           }
-        } catch (backupError) {
-          console.error('Both email systems failed:', backupError);
-          console.log('Registration saved but emails failed to send');
-          
-          // Show user a message about email delay
-          alert(`Registration saved successfully! 
-
-However, there was an issue sending your confirmation email. 
-
-✅ Your registration has been recorded
-📧 You should receive a confirmation email within 24 hours
-📞 If you don't receive confirmation, please call (800) 609-6211
-
-Registration ID: ${registrationData.id}`);
-        }
+        );
+        console.log('Notification email sent successfully');
+      } catch (emailError) {
+        console.log('Email notification failed (this is OK):', emailError);
+        // Don't fail the registration if email fails
       }
       
-      // Show payment page
+      // 4. Send confirmation email to registrant
+      try {
+        console.log('Sending confirmation email to registrant...');
+        await emailjs.send(
+          'service_p49aqfy',
+          'template_oywsajv',
+          {
+            to_name: `${formData.firstName} ${formData.lastName}`,
+            to_email: formData.email,
+            from_name: 'Churches of Christ National Lectureship',
+            registration_type: formData.registrationType || 'Special Events Only',
+            total_amount: getTotalPrice(),
+            payment_method: formData.paymentMethod ? 
+              (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
+               formData.paymentMethod === 'zelle' ? 'Zelle' :
+               formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
+            attendee_names: formData.attendeeNames || 'N/A',
+            attendee_contacts: formData.attendeeContacts || 'N/A',
+            vendor_tables: formData.vendorTables > 0 ? `${formData.vendorTables} table(s)` : 'None',
+            advertisements: formData.advertisements.length > 0 ? formData.advertisements.join(', ') : 'None',
+            special_events: formData.specialEvents.length > 0 ? formData.specialEvents.join(', ') : 'None',
+            day_to_day_dates: formData.dayToDayDates.length > 0 ? formData.dayToDayDates.join(', ') : 'N/A',
+            phone: formData.phone,
+            address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+            additional_notes: formData.additionalNotes || 'None',
+            quantity: formData.quantity,
+            registration_id: registrationData.id
+          }
+        );
+        console.log('Confirmation email sent to registrant successfully');
+      } catch (emailError) {
+        console.log('Registrant confirmation email failed (this is OK):', emailError);
+        // Don't fail the registration if email fails
+      }
+      
+      // Show success message
+      alert(`✅ Registration submitted successfully!
+
+Registration ID: ${registrationData.id}
+
+Your registration has been saved and you should receive a confirmation email shortly.
+
+${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' : 'Thank you for registering!'}`);
+      
       setShowPayment(true);
       
     } catch (error: any) {
@@ -268,86 +276,36 @@ Registration ID: ${registrationData.id}`);
     }
   };
 
-  // New function to handle email sending after payment
-  const sendConfirmationEmails = async (registrationData: RegistrationData) => {
+  // Helper function to send detailed registration email
+  const sendRegistrationEmail = async (registrationData: RegistrationData) => {
     try {
-      console.log('Attempting to send confirmation email...');
-      const emailResult = await emailjs.send(
+      // Send a comprehensive registration email with all details
+      await emailjs.send(
         'service_p49aqfy',
-        'template_oywsajv',
+        'template_oywsajv', // You might want to create a special admin template for this
         {
-          to_name: `${registrationData.firstName} ${registrationData.lastName}`,
-          to_email: registrationData.email,
-          from_name: 'Churches of Christ National Lectureship',
-          registration_type: registrationData.registrationType || 'Special Events Only',
-          total_amount: registrationData.totalAmount,
-          payment_method: formData.paymentMethod ? 
-            (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
-             formData.paymentMethod === 'zelle' ? 'Zelle' :
-             formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
-          attendee_names: registrationData.attendeeNames || 'N/A',
-          attendee_contacts: registrationData.attendeeContacts || 'N/A',
-          vendor_tables: registrationData.vendorTables > 0 ? `${registrationData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
-          advertisements: registrationData.advertisements.length > 0 ? registrationData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
-          special_events: registrationData.specialEvents.length > 0 ? registrationData.specialEvents.join(', ') : 'None',
-          day_to_day_dates: registrationData.dayToDayDates.length > 0 ? registrationData.dayToDayDates.join(', ') : 'N/A',
-          phone: registrationData.phone,
-          address: `${registrationData.address}, ${registrationData.city}, ${registrationData.state} ${registrationData.zipCode}`,
-          additional_notes: registrationData.additionalNotes || 'None',
-          quantity: registrationData.quantity,
-          registration_id: registrationData.id
-        }
-      );
-      console.log('Registration email sent successfully:', emailResult);
-      
-      console.log('Attempting to send internal notification email...');
-      const internalEmailResult = await emailjs.send(
-        'service_p49aqfy',
-        'template_oywsajv',
-        {
-          to_name: 'Churches of Christ National Lectureship',
+          to_name: 'Admin Registration System',
           to_email: 'cocnl1945@gmail.com',
-          from_name: 'Website Registration System',
-          registration_type: `NEW REGISTRATION: ${registrationData.firstName} ${registrationData.lastName}`,
+          from_name: 'Website Registration Database',
+          registration_type: `FULL REGISTRATION DATA: ${registrationData.firstName} ${registrationData.lastName}`,
           total_amount: registrationData.totalAmount,
-          payment_method: formData.paymentMethod ? 
-            (formData.paymentMethod === 'credit-card' ? 'Credit Card (Square)' :
-             formData.paymentMethod === 'zelle' ? 'Zelle' :
-             formData.paymentMethod === 'check' ? 'Mail Check' : 'Not specified') : 'Not specified',
+          payment_method: 'See full data below',
           attendee_names: registrationData.attendeeNames || 'N/A',
           attendee_contacts: registrationData.attendeeContacts || 'N/A',
-          vendor_tables: registrationData.vendorTables > 0 ? `${registrationData.vendorTables} table(s) - $${getVendorTablePrice()}` : 'None',
-          advertisements: registrationData.advertisements.length > 0 ? registrationData.advertisements.join(', ') + ` - $${getAdvertisementPrice()}` : 'None',
+          vendor_tables: registrationData.vendorTables > 0 ? `${registrationData.vendorTables} table(s)` : 'None',
+          advertisements: registrationData.advertisements.length > 0 ? registrationData.advertisements.join(', ') : 'None',
           special_events: registrationData.specialEvents.length > 0 ? registrationData.specialEvents.join(', ') : 'None',
           day_to_day_dates: registrationData.dayToDayDates.length > 0 ? registrationData.dayToDayDates.join(', ') : 'N/A',
           phone: registrationData.phone,
           address: `${registrationData.address}, ${registrationData.city}, ${registrationData.state} ${registrationData.zipCode}`,
-          additional_notes: registrationData.additionalNotes || 'None',
+          additional_notes: `FULL REGISTRATION DATA JSON: ${JSON.stringify(registrationData, null, 2)}`,
           quantity: registrationData.quantity,
           registration_id: registrationData.id
         }
       );
-      console.log('Internal notification email sent successfully:', internalEmailResult);
-      
-    } catch (emailError) {
-      console.error('EmailJS failed, trying backup email system:', emailError);
-      
-      // Try backup email system
-      try {
-        const backupResult = await sendRegistrationEmail({
-          ...registrationData,
-          paymentMethod: formData.paymentMethod
-        });
-        
-        if (backupResult.success) {
-          console.log('Backup email sent successfully');
-        } else {
-          throw new Error('Backup email also failed');
-        }
-      } catch (backupError) {
-        console.error('Both email systems failed:', backupError);
-        console.log('Registration saved but emails failed to send');
-      }
+      console.log('Detailed registration email sent to admin');
+    } catch (error) {
+      console.error('Failed to send detailed registration email:', error);
     }
   };
 
@@ -463,92 +421,67 @@ Registration ID: ${registrationData.id}`);
                 <p><strong>Email:</strong> {formData.email}</p>
                 <p><strong>Registration Type:</strong> {formData.registrationType || 'Special Events Only'}</p>
                 <p><strong>Total Amount:</strong> ${getTotalPrice()}</p>
-                <p><strong>Registration ID:</strong> {`reg_${Date.now().toString().slice(-8)}`}</p>
                 {formData.paymentMethod && (
-                  <p><strong>Payment Method:</strong> {
+                  <p><strong>Preferred Payment Method:</strong> {
                     formData.paymentMethod === 'credit-card' ? '💳 Credit/Debit Card' :
                     formData.paymentMethod === 'zelle' ? '📱 Zelle' :
                     formData.paymentMethod === 'check' ? '✉️ Mail Check' : formData.paymentMethod
                   }</p>
                 )}
-                {formData.registrationType === 'day-to-day' && formData.dayToDayDates.length > 0 && (
-                  <p><strong>Selected Days:</strong> {formData.dayToDayDates.map(date => {
-                    const dayNames: { [key: string]: string } = {
-                      'saturday-march-8': 'Saturday, March 8',
-                      'sunday-march-9': 'Sunday, March 9',
-                      'monday-march-10': 'Monday, March 10', 
-                      'tuesday-march-11': 'Tuesday, March 11',
-                      'wednesday-march-12': 'Wednesday, March 12'
-                    };
-                    return dayNames[date];
-                  }).join(', ')}</p>
-                )}
               </div>
             </div>
 
-            {/* Payment Instructions based on selected method */}
+            {/* Payment Instructions */}
             {getTotalPrice() > 0 && (
-              <div className="mb-8">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h3 className="text-xl font-bold text-blue-900 mb-4">💳 Complete Your Payment</h3>
+                
                 {formData.paymentMethod === 'credit-card' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <h3 className="text-xl font-bold text-blue-900 mb-4">💳 Complete Your Online Payment</h3>
-                    <p className="text-blue-700 mb-4">
-                      Click the button below to pay securely with your credit or debit card through Square.
-                    </p>
-                    <a
-                      href="https://square.link/u/ieidynuy"
-                      target="_blank"
+                  <div className="space-y-4">
+                    <p className="text-blue-800">Click the link below to pay securely with Square:</p>
+                    <a 
+                      href={getPaymentLinks()[formData.registrationType] || 'https://square.link/u/ieidynuy'}
+                      target="_blank" 
                       rel="noopener noreferrer"
-                      className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 inline-block"
+                      className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Pay ${getTotalPrice()} with Square →
                     </a>
+                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-green-800 font-medium mb-2">✅ After completing payment:</p>
+                      <p className="text-green-700 text-sm">
+                        Your payment will be processed immediately. You'll receive a confirmation email from Square, 
+                        and we'll update your registration status within 24 hours.
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 {formData.paymentMethod === 'zelle' && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                    <h3 className="text-xl font-bold text-purple-900 mb-4">📱 Pay with Zelle</h3>
-                    <div className="space-y-3 text-purple-700">
-                      <p><strong>Send payment to:</strong> cocnl1945@gmail.com</p>
-                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
-                      <p><strong>Memo:</strong> {formData.firstName} {formData.lastName} - Lectureship Registration</p>
-                    </div>
-                    <div className="mt-4 p-3 bg-purple-100 rounded-lg">
-                      <p className="text-purple-800 text-sm">
-                        💡 <strong>Important:</strong> Please include your name and "Lectureship Registration" in the Zelle memo so we can match your payment to your registration.
-                      </p>
+                  <div className="space-y-4">
+                    <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
+                      <h4 className="font-bold text-yellow-800 mb-2">📱 Zelle Payment Instructions:</h4>
+                      <p className="text-yellow-700 mb-2"><strong>Send to:</strong> cocnl1945@gmail.com</p>
+                      <p className="text-yellow-700 mb-2"><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p className="text-yellow-700"><strong>Memo:</strong> {formData.firstName} {formData.lastName} - Lectureship Registration</p>
                     </div>
                   </div>
                 )}
 
                 {formData.paymentMethod === 'check' && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                    <h3 className="text-xl font-bold text-green-900 mb-4">✉️ Mail Your Check</h3>
-                    <div className="space-y-3 text-green-700">
-                      <p><strong>Make check payable to:</strong> Churches of Christ National Lectureship</p>
-                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
-                      <p><strong>Mail to:</strong></p>
-                      <div className="ml-4 bg-green-100 p-3 rounded">
+                  <div className="space-y-4">
+                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
+                      <h4 className="font-bold text-gray-800 mb-2">✉️ Mail Check Instructions:</h4>
+                      <p className="text-gray-700 mb-1"><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p className="text-gray-700 mb-1"><strong>Make check payable to:</strong> Churches of Christ National Lectureship</p>
+                      <p className="text-gray-700 mb-1"><strong>Mail to:</strong></p>
+                      <div className="ml-4 text-gray-700">
                         <p>Churches of Christ National Lectureship</p>
                         <p>289 Jonesboro Road, STE #199</p>
                         <p>McDonough, GA 30253</p>
                       </div>
+                      <p className="text-gray-700 mt-2"><strong>Memo line:</strong> {formData.firstName} {formData.lastName} - Registration</p>
                     </div>
-                    <div className="mt-4 p-3 bg-green-100 rounded-lg">
-                      <p className="text-green-800 text-sm">
-                        💡 <strong>Important:</strong> Please write your name and registration ID on the memo line of your check.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {!formData.paymentMethod && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">💰 Payment Required</h3>
-                    <p className="text-gray-700 mb-4">
-                      Please contact us at <strong>cocnl1945@gmail.com</strong> or <strong>(800) 609-6211</strong> to arrange payment.
-                    </p>
                   </div>
                 )}
               </div>
