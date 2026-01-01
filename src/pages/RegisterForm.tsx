@@ -1,4 +1,4 @@
-                    import React, { useState, useEffect } from 'react';
+                                import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import { saveRegistrationCentrally } from '../utils/registrationStorage';
@@ -311,13 +311,9 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
 
   const getRegistrationPrice = () => {
     const prices: { [key: string]: number } = {
-      'individual-early': 190,
       'individual-regular': 210,
-      'georgia-early': 175,
       'georgia-regular': 195,
-      'group-5-early': 925,
       'group-5-regular': 975,
-      'group-10-early': 1800,
       'group-10-regular': 1925,
       'day-to-day': 75
     };
@@ -374,13 +370,9 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
 
   const getPaymentLinks = () => {
     const links: { [key: string]: string } = {
-      'individual-early': 'https://square.link/u/ieidynuy',
       'individual-regular': 'https://square.link/u/VdIdderF',
-      'georgia-early': 'https://square.link/u/2xwzKLOF',
       'georgia-regular': 'https://square.link/u/UACAsYNa',
-      'group-5-early': 'https://square.link/u/R8ten5jo',
       'group-5-regular': 'https://square.link/u/kBhQ4aaj',
-      'group-10-early': 'https://square.link/u/8TgV0WNa',
       'group-10-regular': 'https://square.link/u/c9dLJDyX',
       'memorial-banquet': 'https://square.link/u/3EFbURkB',
       'vendor-1-table': 'https://square.link/u/MuxoTkEI',
@@ -431,57 +423,75 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
               </div>
             </div>
 
-            {/* Payment Instructions */}
+            {/* Payment Instructions based on selected method */}
             {getTotalPrice() > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-                <h3 className="text-xl font-bold text-blue-900 mb-4">💳 Complete Your Payment</h3>
-                
-                {formData.paymentMethod === 'credit-card' && (
-                  <div className="space-y-4">
-                    <p className="text-blue-800">Click the link below to pay securely with Square:</p>
-                    <a 
-                      href={getPaymentLinks()[formData.registrationType] || 'https://square.link/u/ieidynuy'}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Pay ${getTotalPrice()} with Square →
-                    </a>
-                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-green-800 font-medium mb-2">✅ After completing payment:</p>
-                      <p className="text-green-700 text-sm">
-                        Your payment will be processed immediately. You'll receive a confirmation email from Square, 
-                        and we'll update your registration status within 24 hours.
+              <div className="mb-8">
+                {formData.paymentMethod === 'zelle' && (
+                  <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-purple-900 mb-4">⭐ Pay with Zelle (Conference Preferred)</h3>
+                    <div className="space-y-3 text-purple-700">
+                      <p><strong>Send payment to:</strong> cocnl1945@gmail.com</p>
+                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p><strong>Memo:</strong> {formData.firstName} {formData.lastName} - Lectureship Registration</p>
+                    </div>
+                    <div className="mt-4 p-4 bg-purple-100 rounded-lg">
+                      <p className="text-purple-800 text-sm">
+                        ✅ <strong>Thank you for using Zelle!</strong> This is the conference's preferred payment method for faster processing and no fees. Please include your name and "Lectureship Registration" in the Zelle memo.
                       </p>
                     </div>
                   </div>
                 )}
 
-                {formData.paymentMethod === 'zelle' && (
-                  <div className="space-y-4">
-                    <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
-                      <h4 className="font-bold text-yellow-800 mb-2">📱 Zelle Payment Instructions:</h4>
-                      <p className="text-yellow-700 mb-2"><strong>Send to:</strong> cocnl1945@gmail.com</p>
-                      <p className="text-yellow-700 mb-2"><strong>Amount:</strong> ${getTotalPrice()}</p>
-                      <p className="text-yellow-700"><strong>Memo:</strong> {formData.firstName} {formData.lastName} - Lectureship Registration</p>
+                {formData.paymentMethod === 'credit-card' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-blue-900 mb-4">💳 Complete Your Online Payment</h3>
+                    <p className="text-blue-700 mb-4">
+                      Click the button below to pay securely with your credit or debit card through Square.
+                    </p>
+                    <a
+                      href="https://square.link/u/VdIdderF"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 inline-block"
+                    >
+                      Pay ${getTotalPrice()} with Square →
+                    </a>
+                    <div className="mt-3 p-3 bg-blue-100 rounded-lg">
+                      <p className="text-blue-800 text-sm">
+                        💡 <strong>Note:</strong> The conference prefers Zelle payments for faster processing. Consider using Zelle for future transactions.
+                      </p>
                     </div>
                   </div>
                 )}
 
                 {formData.paymentMethod === 'check' && (
-                  <div className="space-y-4">
-                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
-                      <h4 className="font-bold text-gray-800 mb-2">✉️ Mail Check Instructions:</h4>
-                      <p className="text-gray-700 mb-1"><strong>Amount:</strong> ${getTotalPrice()}</p>
-                      <p className="text-gray-700 mb-1"><strong>Make check payable to:</strong> Churches of Christ National Lectureship</p>
-                      <p className="text-gray-700 mb-1"><strong>Mail to:</strong></p>
-                      <div className="ml-4 text-gray-700">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-green-900 mb-4">✉️ Mail Your Check</h3>
+                    <div className="space-y-3 text-green-700">
+                      <p><strong>Make check payable to:</strong> Churches of Christ National Lectureship</p>
+                      <p><strong>Amount:</strong> ${getTotalPrice()}</p>
+                      <p><strong>Mail to:</strong></p>
+                      <div className="ml-4 bg-green-100 p-3 rounded">
                         <p>Churches of Christ National Lectureship</p>
                         <p>289 Jonesboro Road, STE #199</p>
                         <p>McDonough, GA 30253</p>
                       </div>
-                      <p className="text-gray-700 mt-2"><strong>Memo line:</strong> {formData.firstName} {formData.lastName} - Registration</p>
                     </div>
+                    <div className="mt-4 p-3 bg-green-100 rounded-lg">
+                      <p className="text-green-800 text-sm">
+                        💡 <strong>Faster option:</strong> Consider using Zelle (cocnl1945@gmail.com) for instant payment processing.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!formData.paymentMethod && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">💰 Payment Required</h3>
+                    <p className="text-gray-700 mb-4">
+                      <strong>Preferred:</strong> Zelle to cocnl1945@gmail.com<br/>
+                      <strong>Alternative:</strong> Contact us at <strong>cocnl1945@gmail.com</strong> or <strong>(800) 609-6211</strong>
+                    </p>
                   </div>
                 )}
               </div>
@@ -681,14 +691,10 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
               >
                 <option value="">No Lectureship Registration (Special Events/Vendor/Ads Only)</option>
-                <option value="individual-early">Individual Early Bird - $190 (Until Dec 31, 2025)</option>
-                <option value="individual-regular">Individual Regular - $210 (Starting Jan 1, 2026)</option>
-                <option value="georgia-early">Georgia Resident Early Bird - $175 (Until Dec 31, 2025)</option>
-                <option value="georgia-regular">Georgia Resident Regular - $195 (Starting Jan 1, 2026)</option>
-                <option value="group-5-early">Group 5 People Early Bird - $925 (Until Dec 31, 2025)</option>
-                <option value="group-5-regular">Group 5 People Regular - $975 (Starting Jan 1, 2026)</option>
-                <option value="group-10-early">Group 10 People Early Bird - $1,800 (Until Dec 31, 2025)</option>
-                <option value="group-10-regular">Group 10 People Regular - $1,925 (Starting Jan 1, 2026)</option>
+                <option value="individual-regular">Individual Registration - $210</option>
+                <option value="georgia-regular">Georgia Resident Registration - $195</option>
+                <option value="group-5-regular">Group 5 People Registration - $975</option>
+                <option value="group-10-regular">Group 10 People Registration - $1,925</option>
                 <option value="day-to-day">Day-to-Day Registration - $75 per day</option>
               </select>
             </div>
@@ -851,9 +857,7 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
                     ))}
                   </select>
                   <div className="text-slate-600">
-                    × ${formData.registrationType.includes('individual-early') ? '190' : 
-                        formData.registrationType.includes('individual-regular') ? '210' :
-                        formData.registrationType.includes('georgia-early') ? '175' :
+                    × ${formData.registrationType.includes('individual-regular') ? '210' : 
                         formData.registrationType.includes('georgia-regular') ? '195' : '0'} = 
                     <span className="font-bold text-slate-900 ml-1">${getRegistrationPrice()}</span>
                   </div>
@@ -1172,19 +1176,38 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">💳 Payment Method</h3>
                 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                   <div className="flex items-start">
-                    <span className="text-blue-600 text-2xl mr-3 mt-1">ℹ️</span>
+                    <span className="text-purple-600 text-2xl mr-3 mt-1">⭐</span>
                     <div>
-                      <h4 className="font-semibold text-blue-800 mb-2">How will you pay?</h4>
-                      <p className="text-blue-700 text-sm">
-                        Please let us know your preferred payment method. This helps us track payments more efficiently.
+                      <h4 className="font-semibold text-purple-800 mb-2">Preferred Payment Method</h4>
+                      <p className="text-purple-700 text-sm mb-2">
+                        <strong>The conference prefers Zelle payments</strong> for faster processing and lower fees.
+                      </p>
+                      <p className="text-purple-700 text-sm">
+                        Send to: <strong>cocnl1945@gmail.com</strong> with your name and "Lectureship Registration" in the memo.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
+                  <label className="flex items-start p-4 border-2 border-purple-300 bg-purple-50 rounded-lg hover:bg-purple-100 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="zelle"
+                      checked={formData.paymentMethod === 'zelle'}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-purple-300"
+                    />
+                    <div className="ml-3">
+                      <span className="text-purple-900 font-bold">📱 Zelle (Preferred by Conference)</span>
+                      <p className="text-purple-700 text-sm font-medium">Send payment to: cocnl1945@gmail.com</p>
+                      <p className="text-purple-600 text-xs mt-1">✅ Fastest processing • ✅ No fees • ✅ Instant confirmation</p>
+                    </div>
+                  </label>
+
                   <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
                     <input
                       type="radio"
@@ -1197,22 +1220,7 @@ ${getTotalPrice() > 0 ? 'Please complete your payment using the options below.' 
                     <div className="ml-3">
                       <span className="text-slate-700 font-medium">💳 Credit Card (Square)</span>
                       <p className="text-slate-600 text-sm">Pay online using our secure Square payment links</p>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="zelle"
-                      checked={formData.paymentMethod === 'zelle'}
-                      onChange={handleInputChange}
-                      className="mt-1 h-4 w-4 text-slate-600 focus:ring-slate-500 border-slate-300"
-                    />
-                    <div className="ml-3">
-                      <span className="text-slate-700 font-medium">📱 Zelle</span>
-                      <p className="text-slate-600 text-sm">Send payment to: cocnl1945@gmail.com</p>
-                      <p className="text-slate-500 text-xs mt-1">Include your name and "Lectureship Registration" in the memo</p>
+                      <p className="text-slate-500 text-xs mt-1">Processing fees may apply</p>
                     </div>
                   </label>
 
