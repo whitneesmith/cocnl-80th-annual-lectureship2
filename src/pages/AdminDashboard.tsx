@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import RegistrationTable from '../components/RegistrationTable';
 import { RegistrationData, exportToCSV, exportSummaryReport } from '../utils/csvExport';
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
       city: 'Atlanta',
       state: 'GA',
       zipCode: '30303',
-      registrationType: 'individual-early',
+      registrationType: 'individual-regular',
       quantity: 1,
       attendeeNames: 'John Smith',
       attendeeContacts: '',
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
       advertisements: [],
       dayToDayDates: [],
       additionalNotes: 'Test registration',
-      totalAmount: 265, // 190 + 75
+      totalAmount: 285, // 210 + 75
       paymentStatus: 'pending'
     };
 
