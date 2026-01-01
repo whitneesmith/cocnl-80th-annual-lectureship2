@@ -317,133 +317,82 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Registration Pricing</h2>
+            <p className="text-gray-600 text-lg">Join us for this historic 80th Annual Lectureship</p>
           </div>
-
-          {/* Early Bird vs Regular Pricing */}
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Early Bird Pricing */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 shadow-lg border-2 border-green-200">
-              <div className="text-center mb-6">
-                <div className="inline-block bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">
-                  EARLY BIRD SPECIAL
-                </div>
-                <p className="text-green-700 font-semibold">Valid Only Until December 31, 2025</p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <span className="text-gray-700 font-medium">Individual Registration</span>
-                  <span className="text-green-600 font-bold text-xl">$190.00</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <div>
-                    <span className="text-gray-700 font-medium">Georgia Residents</span>
-                    <p className="text-xs text-gray-500">Must Verify Residency</p>
-                  </div>
-                  <span className="text-green-600 font-bold text-xl">$175.00</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <span className="text-gray-700 font-medium">Group 5 People</span>
-                  <span className="text-green-600 font-bold text-xl">$925.00</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <span className="text-gray-700 font-medium">Group 10 People</span>
-                  <span className="text-green-600 font-bold text-xl">$1,800.00</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Regular Pricing */}
+            {/* Individual & Georgia Rates */}
             <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-8 shadow-lg border border-slate-200">
               <div className="text-center mb-6">
-                <div className="inline-block bg-slate-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">
-                  REGULAR RATES
-                </div>
-                <p className="text-slate-700 font-semibold">Starting January 1, 2026</p>
+                <div className="inline-block bg-slate-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">INDIVIDUAL RATES</div>
+                <p className="text-slate-700 font-semibold">Current Registration Pricing</p>
               </div>
-              
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-white rounded-lg">
                   <span className="text-gray-700 font-medium">Individual Registration</span>
                   <span className="text-slate-600 font-bold text-xl">$210.00</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <div>
-                    <span className="text-gray-700 font-medium">Georgia Residents</span>
-                    <p className="text-xs text-gray-500">Must Verify Residency</p>
-                  </div>
+                  <span className="text-gray-700 font-medium">Georgia Residents</span>
                   <span className="text-slate-600 font-bold text-xl">$195.00</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <span className="text-gray-700 font-medium">Group 5 People</span>
-                  <span className="text-slate-600 font-bold text-xl">$975.00</span>
+                  <span className="text-gray-700 font-medium">Day-to-Day</span>
+                  <span className="text-slate-600 font-bold text-xl">$75.00/day</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Group Rates */}
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 shadow-lg border-2 border-green-200">
+              <div className="text-center mb-6">
+                <div className="inline-block bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">GROUP DISCOUNTS</div>
+                <p className="text-green-700 font-semibold">Save with Group Registration</p>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
+                  <span className="text-gray-700 font-medium">Group of 5 People</span>
+                  <span className="text-green-600 font-bold text-xl">$975.00</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white rounded-lg">
-                  <span className="text-gray-700 font-medium">Group 10 People</span>
-                  <span className="text-slate-600 font-bold text-xl">$1,925.00</span>
+                  <span className="text-gray-700 font-medium">Group of 10 People</span>
+                  <span className="text-green-600 font-bold text-xl">$1,925.00</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-white rounded-lg">
+                  <span className="text-gray-700 font-medium">Memorial Banquet</span>
+                  <span className="text-green-600 font-bold text-xl">$75.00</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Additional Registration Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <h4 className="text-xl font-semibold text-slate-800 mb-4">Additional Registration Options</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">On-Site Individual Registration</span>
-                  <span className="text-slate-600 font-bold">$260.00</span>
-                </div>
-                <p className="text-xs text-gray-500">For All Attendees</p>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-gray-700">Day-to-Day Individual Registration</span>
-                    <p className="text-xs text-gray-500">No Amenities Provided</p>
-                  </div>
-                  <span className="text-slate-600 font-bold">$65.00</span>
-                </div>
-              </div>
+          {/* Preferred Payment Method Section */}
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-8 shadow-lg">
+            <div className="text-center mb-6">
+              <div className="inline-block bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">⭐ PREFERRED PAYMENT</div>
+              <h3 className="text-2xl font-bold text-purple-900 mb-2">Conference Prefers Zelle</h3>
+              <p className="text-purple-700">Faster processing • No fees • Instant confirmation</p>
             </div>
-
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-              <h4 className="text-xl font-semibold text-red-800 mb-4">Important Notice</h4>
-              <p className="text-red-700 font-semibold">
-                No Personal or Church Checks Will be Accepted After February 1, 2026
+            
+            <div className="bg-white rounded-xl p-6 text-center">
+              <div className="mb-4">
+                <span className="text-purple-900 font-bold text-2xl">📱 cocnl1945@gmail.com</span>
+              </div>
+              <p className="text-purple-700 mb-4">
+                Send your Zelle payment to the email above and include your name + "Lectureship Registration" in the memo.
               </p>
-            </div>
-          </div>
-
-          {/* Special Events */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="text-center p-6 bg-gradient-to-br from-slate-50 to-slate-50 rounded-xl">
-              <div className="w-16 h-16 bg-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl">🎵</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="text-green-600">✅ Instant</div>
+                <div className="text-green-600">✅ No Fees</div>
+                <div className="text-green-600">✅ Secure</div>
+                <div className="text-green-600">✅ Preferred</div>
               </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Sunday Songfest at Hotel</h4>
-              <p className="text-gray-600 text-sm mb-2">March 8, 2026 • 4:30-6:00 PM</p>
-              <p className="text-green-600 font-bold text-xl">FREE</p>
             </div>
             
-            <div className="text-center p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-              <div className="w-16 h-16 bg-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl">👩</span>
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Women's Division Luncheon</h4>
-              <p className="text-gray-600 text-sm mb-2">March 11, 2026 • 12:00 PM</p>
-              <p className="text-slate-600 font-bold text-xl">$60.00</p>
-              <p className="text-xs text-gray-500 mt-1">On-Site Ticket Purchase Only</p>
-              <p className="text-xs text-gray-500">Not Included in Lectureship Registration</p>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl">
-              <div className="w-16 h-16 bg-slate-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl">🍽️</span>
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">John O. Williams Lectureship Memorial Banquet</h4>
-              <p className="text-gray-600 text-sm mb-2">March 12, 2026 • 6:00 PM</p>
-              <p className="text-green-600 font-bold text-lg">Included in Registration</p>
-              <p className="text-xs text-gray-500 mt-1">Single Ticket Purchase $75.00</p>
+            <div className="text-center mt-6">
+              <p className="text-purple-600 text-sm">
+                Credit card and check payments are also accepted, but Zelle is preferred for faster processing.
+              </p>
             </div>
           </div>
         </div>
