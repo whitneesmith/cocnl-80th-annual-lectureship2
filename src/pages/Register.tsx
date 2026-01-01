@@ -1,5 +1,5 @@
-        import React from 'react';
-import { Link } from 'react-router-dom';
+                    import React from 'react';
+
 const Register = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-50">
@@ -22,65 +22,77 @@ const Register = () => {
               <p className="text-slate-100 mb-6">
                 Use our convenient online registration form with multiple payment options including Credit Card, PayPal, and Zelle.
               </p>
-<Link 
-  to="/register-form" 
-  className="inline-block bg-white text-slate-700 font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
->
-  Start Online Registration
-</Link>
+              <a 
+                href="/register-form" 
+                className="inline-block bg-white text-slate-700 font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
+              >
+                Start Online Registration
+              </a>
             </div>
           </div>
 
           {/* Registration Types */}
           <div className="mb-16">
             <h3 className="text-2xl font-bold text-slate-900 mb-8">Registration Types & Pricing</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Individual Registrations */}
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-100">
-                <h4 className="text-xl font-bold text-slate-900 mb-6">Individual Registration</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div>
-                      <p className="font-semibold text-slate-900">Early Bird (Until Dec 31, 2025)</p>
-                      <p className="text-slate-600 text-sm">Individual Registration</p>
-                    </div>
-                    <span className="text-green-700 font-bold text-lg">$190</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="font-semibold text-slate-900">Regular (Starting Jan 1, 2026)</p>
-                      <p className="text-slate-600 text-sm">Individual Registration</p>
-                    </div>
-                    <span className="text-slate-700 font-bold text-lg">$210</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div>
-                      <p className="font-semibold text-slate-900">Late (March 1-8, 2026)</p>
-                      <p className="text-slate-600 text-sm">Individual Registration</p>
-                    </div>
-                    <span className="text-red-700 font-bold text-lg">$245</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div>
-                      <p className="font-semibold text-slate-900">Day-to-Day</p>
-                      <p className="text-slate-600 text-sm">Per day - specify date(s)</p>
-                    </div>
-                    <span className="text-blue-700 font-bold text-lg">$75</span>
-                  </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div>
+                  <p className="font-semibold text-slate-900">Individual Registration</p>
+                  <p className="text-slate-600 text-sm">Full Lectureship Access</p>
                 </div>
+                <span className="text-slate-700 font-bold text-lg">$210</span>
               </div>
+              
+              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <p className="font-semibold text-slate-900">Georgia Residents</p>
+                  <p className="text-slate-600 text-sm">Special Rate for GA Residents</p>
+                </div>
+                <span className="text-blue-700 font-bold text-lg">$195</span>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <p className="font-semibold text-slate-900">Group Registration (5 People)</p>
+                  <p className="text-slate-600 text-sm">Save with group rates</p>
+                </div>
+                <span className="text-green-700 font-bold text-lg">$975</span>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <p className="font-semibold text-slate-900">Group Registration (10 People)</p>
+                  <p className="text-slate-600 text-sm">Best value for large groups</p>
+                </div>
+                <span className="text-green-700 font-bold text-lg">$1,925</span>
+              </div>
+              
+              <div className="flex justify-between items-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                  <p className="font-semibold text-slate-900">Day-to-Day Registration</p>
+                  <p className="text-slate-600 text-sm">Per day attendance</p>
+                </div>
+                <span className="text-yellow-700 font-bold text-lg">$75/day</span>
+              </div>
+            </div>
 
-              {/* First Speaker Photo - In the grid */}
-              <div className="flex items-center justify-center">
-                <img 
-                  src="/speaker-at-hyatt-podium.png" 
-                  alt="Speaker at lectureship"
-                  className="w-full max-w-sm h-auto rounded-lg shadow-lg"
-                />
+            {/* Payment Method Information */}
+            <div className="mt-8 p-6 bg-purple-50 border-2 border-purple-200 rounded-lg">
+              <h4 className="text-xl font-bold text-purple-900 mb-4">⭐ Preferred Payment Method</h4>
+              <div className="space-y-3">
+                <p className="text-purple-700">
+                  <strong>The conference prefers Zelle payments</strong> for faster processing and no fees.
+                </p>
+                <div className="bg-purple-100 p-4 rounded-lg">
+                  <p className="text-purple-800 font-medium">📱 Send Zelle payments to:</p>
+                  <p className="text-purple-900 font-bold text-lg">cocnl1945@gmail.com</p>
+                  <p className="text-purple-700 text-sm mt-2">
+                    Include your name and "Lectureship Registration" in the memo
+                  </p>
+                </div>
+                <p className="text-purple-600 text-sm">
+                  ✅ Instant processing • ✅ No fees • ✅ Secure • ✅ Conference preferred
+                </p>
               </div>
             </div>
           </div>
